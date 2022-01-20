@@ -1,0 +1,10 @@
+:root {
+    --test-var: #\0041\0041\0041;
+}
+
+@media only screen and (max-width: 600px) {
+    #test {
+        background: #555;
+        color: var(--test-var);
+    }
+}
