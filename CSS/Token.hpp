@@ -16,7 +16,7 @@ class Token {
 		Token(TokenType type, string lexeme = "", int position = -1, int line = -1)
 			: type(type),
 			lexeme(lexeme),
-			position(position),
+			position(position - lexeme.size()),
 			line(line)
 		{};
 };

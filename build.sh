@@ -1,0 +1,1 @@
+gcc CSS/*.cpp -std=c++2a -lstdc++ -o build/main && build/main

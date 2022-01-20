@@ -1,12 +1,11 @@
 #include "Lexer.hpp"
+#include "Parser.hpp"
 #include <iostream>
 
-void main() {
-	Lexer lexer("test.css");
+int main() {
+	Lexer lexer("CSS/test.css");
 	vector<Token> tokens = lexer.Lex();
-	for (Token t : tokens) {
-		if (t.type != WHITESPACE) {
-			std::cout << t.lexeme << std::endl;
-		}
-	}
+	Parser parser(tokens);
+	parser.Parse();
+	return 0;
 }

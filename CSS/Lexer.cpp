@@ -46,7 +46,10 @@ vector<Token> Lexer::Lex() {
 			case '{': AddToken(LEFT_BRACE); break;
 			case '}': AddToken(RIGHT_BRACE); break;
 			case ',': AddToken(COMMA); break;
-			case '\n': case '\t': case ' ': ConsumeWhitespace(); break;
+			case '\n': {
+				line++;
+			}
+			case '\t': case ' ': ConsumeWhitespace(); break;
 			case '\'': case '"': ConsumeString(); break;
 			case '#': {
 				if (identCodePoint(reader.peek())) {
@@ -169,11 +172,11 @@ vector<Token> Lexer::Lex() {
 }
 
 void Lexer::AddToken(TokenType type) {
-	tokens.push_back(Token(type, string(1, current)));
+	tokens.push_back(Token(type, string(1, current), reader.tellg(), line));
 }
 
 void Lexer::ConsumeWhitespace() {
-	Token t(WHITESPACE, string(1, current));
+	Token t(WHITESPACE, string(1, current), reader.tellg(), line);
 	while (isSpace(reader.peek())) {
 		t.lexeme += reader.get();
 	}
@@ -204,10 +207,11 @@ char Lexer::ConsumeEscapedCodePoint() {
 	else {
 		reader.ignore();
 	}
+	return '\0';
 }
 
 void Lexer::ConsumeString() {
-	Token t(STRING);
+	Token t(STRING, "", reader.tellg(), line);
 	while (reader.peek() != EOF) {
 		char c = reader.get();
 		switch (c) {
@@ -271,7 +275,7 @@ bool Lexer::IsIdentSequence() {
 }
 
 void Lexer::ConsumeHash() {
-	Token t(HASH);
+	Token t(HASH, "", reader.tellg(), line);
 	if (IsIdentSequence()) {
 		t.flags["type"] = "id";
 	}
@@ -337,7 +341,7 @@ void Lexer::ConsumeNumericToken() {
 	else {
 		type = NUMBER;
 	}
-	Token t(type, get<0>(number));
+	Token t(type, get<0>(number), reader.tellg(), line);
 	t.flags["type"] = get<1>(number);
 	if (type == DIMENSION) {
 		t.flags["unit"] = ConsumeIdent();
@@ -352,18 +356,18 @@ void Lexer::ConsumeIdentLike() {
 		if (strcompi(s, "url")) {
 			while (isSpace(reader.peek()) && isSpace(reader.ignore().peek()));
 			if (reader.peek() == '"' || reader.peek() == '\'') {
-				tokens.push_back(Token(FUNCTION, s));
+				tokens.push_back(Token(FUNCTION, s, reader.tellg(), line));
 			}
 			else {
 				ConsumeUrl();
 			}
 		}
 		else {
-			tokens.push_back(Token(FUNCTION, s));
+			tokens.push_back(Token(FUNCTION, s, reader.tellg(), line));
 		}
 	}
 	else {
-		tokens.push_back(Token(IDENT, s));
+		tokens.push_back(Token(IDENT, s, reader.tellg(), line));
 	}
 }
 
@@ -372,7 +376,7 @@ void Lexer::SkipSpace() {
 }
 
 void Lexer::ConsumeUrl() {
-	Token t(URL);
+	Token t(URL, "", reader.tellg(), line);
 	SkipSpace();
 	while (reader.peek() != EOF) {
 		char c = reader.get();
@@ -384,7 +388,7 @@ void Lexer::ConsumeUrl() {
 			case '\'':
 			case '(': {
 				ConsumeBadUrl();
-				tokens.push_back(BAD_URL);
+				AddToken(BAD_URL);
 				return;
 			}
 			case '\\': {
@@ -393,7 +397,7 @@ void Lexer::ConsumeUrl() {
 				}
 				else {
 					ConsumeBadUrl();
-					tokens.push_back(BAD_URL);
+					AddToken(BAD_URL);
 					return;
 				}
 				break;
