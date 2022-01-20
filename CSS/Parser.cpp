@@ -2,6 +2,12 @@
 #include "SyntaxError.hpp"
 #include "TokenType.hpp"
 #include <iostream>
+#include "Grammar/AtRule.hpp"
+#include "Grammar/Function.hpp"
+#include "Grammar/QualifiedRule.hpp"
+#include "Grammar/SimpleBlock.hpp"
+using std::unique_ptr;
+using std::make_unique;
 
 Token* Parser::Peek() {
     return idx >= 0 && idx < tokens.size() ? &tokens[idx] : NULL;
@@ -25,39 +31,146 @@ Token Parser::Consume(TokenType type, string error) {
 Token Parser::Consume() {
     Token* t = Peek();
     if (t == NULL) {
-        throw SyntaxError(NULL, "Expected token");
+        throw SyntaxError(NULL, "No tokens left to consume.");
     }
+    idx++;
     return *t;
 }
 
-void Parser::Parse() {
-    
+#define Reconsume idx--
+#define Last tokens[idx - 1]
+
+vector<snptr> Parser::Parse() {
+    rules = ConsumeRulesList();
+    return rules;
 }
 
-void Parser::ConsumeRulesList() {
-    while (Peek() != NULL) {
+vector<snptr> Parser::ConsumeRulesList() {
+    vector<snptr> rules;
+    /* while (Peek() != NULL) {
         Token t = Consume();
-        switch (t.Type) {
+        switch (t.type) {
             case WHITESPACE: break;
-            case EOF: {
-                // Completed parsing. Return rules
-                return;
+            case T_EOF: {
+                return rules;
             }
             case CDO:
             case CDC: {
                 if (!top) {
-                    ConsumeQualifiedRule();
+                    rules.push_back(ConsumeQualifiedRule());
                 }
                 break;
             }
             case AT_KEYWORD: {
-                ConsumeAtRule();
+                Reconsume;
+                rules.push_back(ConsumeAtRule());
                 break;
             }
             default: {
-                ConsumeQualifiedRule();
-                break;
+                rules.push_back(ConsumeQualifiedRule());
+            }
+        }
+    } */
+    return rules;
+}
+
+COMPONENT_VALUE Parser::ConsumeComponentValue() {
+    Token t = Consume();
+    COMPONENT_VALUE val;
+    switch (t.type) {
+        case LEFT_BRACE: case LEFT_BRACKET: case LEFT_PAREN: {
+            return ConsumeSimpleBlock();
+        }
+        case FUNCTION: {
+            return ConsumeFunction();
+        }
+        default: {
+            return t;
+        }
+    }
+}
+
+snptr Parser::ConsumeAtRule() {
+    Token at = Consume(AT_KEYWORD, "Expected AT_KEYWORD");
+    vector<COMPONENT_VALUE> components;
+    while (Peek() != NULL) {
+        Token t = Consume();
+        switch (t.type) {
+            case T_EOF:
+            case SEMICOLON: return make_unique<AtRule>(at, components);
+            case LEFT_BRACE: {
+                return make_unique<AtRule>(at, components, ConsumeSimpleBlock().release());
+            }
+            default: {
+                Reconsume;
+                // components.push_back(ConsumeComponentValue());
             }
         }
     }
+    return make_unique<AtRule>(at, components);
+}
+
+
+
+snptr Parser::ConsumeFunction() {
+    Token ident = Consume(IDENT, "Expected identifier");
+    vector<COMPONENT_VALUE> components;
+    while (Peek() != NULL) {
+        Token t = Consume();
+        switch (t.type) {
+            case T_EOF:
+            case RIGHT_PAREN: return make_unique<Function>(ident, components);
+            default: {
+                // components.push_back(ConsumeComponentValue());
+            }
+        }
+    }
+    return make_unique<Function>(ident, components);
+}
+
+snptr Parser::ConsumeQualifiedRule() {
+    vector<COMPONENT_VALUE> components;
+    while (Peek() != NULL) {
+        Token t = Consume();
+        switch (t.type) {
+            case T_EOF: return NULL;
+            case LEFT_BRACE: {
+                return make_unique<QualifiedRule>(components, ConsumeSimpleBlock().release());
+            }
+            default: {
+                Reconsume;
+                // components.push_back(ConsumeComponentValue());
+            }
+        }
+    }
+    return make_unique<QualifiedRule>(components);
+}
+
+snptr Parser::ConsumeSimpleBlock() {
+    Token open = Last;
+    TokenType mirror;
+    if (open.type == LEFT_BRACE) {
+        mirror = RIGHT_BRACE;
+    }
+    else if (open.type == LEFT_BRACKET) {
+        mirror = RIGHT_BRACKET;
+    }
+    else if (open.type == LEFT_PAREN) {
+        mirror = RIGHT_PAREN;
+    }
+    else {
+        throw SyntaxError(&open, "Expected {, [, or (");
+    }
+    vector<COMPONENT_VALUE> components;
+    while (Peek() != NULL) {
+        Token t = Consume();
+        if (t.type == T_EOF || t.type == mirror) {
+            return make_unique<SimpleBlock>(open, components);
+        }
+        else {
+            Reconsume;
+            // components.push_back(ConsumeComponentValue());
+        }
+    }
+    return make_unique<SimpleBlock>(open, components);
 }

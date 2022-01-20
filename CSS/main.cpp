@@ -6,6 +6,7 @@ int main() {
 	Lexer lexer("CSS/test.css");
 	vector<Token> tokens = lexer.Lex();
 	Parser parser(tokens);
-	parser.Parse();
+	vector<snptr> nodes = parser.Parse();
+	// SyntaxNodeVisitor visitor;
 	return 0;
 }
