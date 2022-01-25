@@ -1,3 +1,0 @@
-﻿  Lexer.cpp
-C:\Users\User\source\repos\CSS\CSS\Lexer.cpp(207): warning C4715: 'Lexer::ConsumeEscapedCodePoint': not all control paths return a value
-  CSS.vcxproj -> C:\Users\User\source\repos\CSS\x64\Debug\CSS.exe
