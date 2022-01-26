@@ -1,3 +1,5 @@
+// TODO Handle whitespace based off of CSS spec
+
 #include "Parser.hpp"
 #include "Errors/SyntaxError.hpp"
 #include "../Lexer/TokenType.hpp"
@@ -232,17 +234,16 @@ bool SelectorParser::CheckToken(TokenType type) {
     return false;
 }
 
-ComplexSelectorList SelectorParser::Parse() {
-    for (int i = 0; i < rule.components.size(); i++) {
-        ComponentValue val = rule.components[i];
-        if (std::holds_alternative<Token>(val)) {
-            Token t = std::get<Token>(val);
-            if (t.type == WHITESPACE) {
-                rule.components.erase(rule.components.begin() + i);
-                i--;
-            }
-        }
+bool SelectorParser::CheckToken(string lexeme) {
+    ComponentValue* val = Peek();
+    if (val != NULL && std::holds_alternative<Token>(*val)) {
+        Token t = std::get<Token>(*val);
+        return t.lexeme == lexeme;
     }
+    return false;
+}
+
+ComplexSelectorList SelectorParser::Parse() {
     ComplexSelectorList list;
     while (Peek() != NULL) {
         std::cout << "complex" << std::endl;
@@ -252,14 +253,11 @@ ComplexSelectorList SelectorParser::Parse() {
 }
 
 ComplexSelector SelectorParser::ConsumeComplexSelector() {
-    vector<ComplexSelectorPair> selectors;// = { ComplexSelectorPair({ }, ConsumeCompoundSelector()) };
+    vector<ComplexSelectorPair> selectors = { ComplexSelectorPair({ }, ConsumeCompoundSelector()) };
     std::cout << "start" << std::endl;
     while (PeekToken() != NULL) {
         std::cout << "tok" << std::endl;
-        ConsumeCombinator();
-        ConsumeCompoundSelector();
-        std::cout << "got compound" << std::endl;
-        //selectors.push_back(ComplexSelectorPair(ConsumeCombinator(), ConsumeCompoundSelector()));
+        selectors.push_back(ComplexSelectorPair(ConsumeCombinator(), ConsumeCompoundSelector()));
     }
     std::cout << "done" << std::endl;
     return ComplexSelector(selectors);
@@ -433,10 +431,10 @@ AttributeSelector SelectorParser::ConsumeAttributeSelector() {
 TypeSelector SelectorParser::ConsumeTypeSelector() {
     Token t = ConsumeToken();
     if (t.type == DELIM && t.lexeme == "*") {
-        if (IsToken() && PeekToken() -> lexeme == "|") {
+        if (CheckToken("|")) {
             Reconsume;
             NsPrefix prefix = ConsumeNsPrefix();
-            if (IsToken() && PeekToken() -> lexeme == "*") {
+            if (CheckToken("*")) {
                 return TypeSelector(prefix, ConsumeToken(DELIM, "Expected delim"));
             }
             throw SyntaxError(PeekToken(), "Expected *");
@@ -446,10 +444,10 @@ TypeSelector SelectorParser::ConsumeTypeSelector() {
         }
     }
     else if (t.type == IDENT) {
-        if (IsToken() && PeekToken() -> lexeme == "|") {
+        if (CheckToken("|")) {
             Reconsume;
             NsPrefix prefix = ConsumeNsPrefix();
-            if (IsToken() && PeekToken() -> lexeme == "*") {
+            if (CheckToken("*")) {
                 return TypeSelector(prefix, ConsumeToken(DELIM, "Expected delim"));
             }
             else if (CheckToken(IDENT)) {

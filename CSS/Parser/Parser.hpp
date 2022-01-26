@@ -55,6 +55,7 @@ class SelectorParser {
         Token ConsumeToken(TokenType type, string error);
         bool IsToken();
         bool CheckToken(TokenType type);
+        bool CheckToken(string lexeme);
         ComplexSelector ConsumeComplexSelector();
         CompoundSelector ConsumeCompoundSelector();
         AttrMatcher ConsumeAttrMatcher();
