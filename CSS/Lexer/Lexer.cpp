@@ -46,6 +46,8 @@ vector<Token> Lexer::Lex() {
 			case '{': AddToken(LEFT_BRACE); break;
 			case '}': AddToken(RIGHT_BRACE); break;
 			case ',': AddToken(COMMA); break;
+			case ':': AddToken(COLON); break;
+			case ';': AddToken(SEMICOLON); break;
 			case '\n': {
 				line++;
 			}

@@ -8,5 +8,5 @@ class Function;
 class QualifiedRule;
 class SimpleBlock;
 
-#define SYNTAX_NODE std::variant<AtRule, Function, QualifiedRule, SimpleBlock>
-#define COMPONENT_VALUE std::variant<SYNTAX_NODE, Token>
+#define SyntaxNode std::variant<AtRule, Function, QualifiedRule, SimpleBlock>
+#define ComponentValue std::variant<SyntaxNode, Token>

@@ -8,7 +8,7 @@
 
 class SyntaxNodeVisitor {
     public:
-        void Visit(std::vector<SYNTAX_NODE> nodes);
+        void Visit(std::vector<SyntaxNode> nodes);
         void Visit(AtRule rule) const;
         void Visit(Function function) const;
         void Visit(QualifiedRule rule) const;

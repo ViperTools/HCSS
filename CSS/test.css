@@ -1,4 +1,4 @@
-:root {
+/* :root {
     --test-var: #\0041\0041\0041;
 }
 
@@ -7,4 +7,19 @@
         background: #555;
         color: var(--test-var);
     }
+
+    #test2 {
+        color: green;
+    }
+}
+
+test {
+    --bruh: #222;
+}
+
+abc + def > ghi {
+    color: red;
+} */
+test {
+    
 }
