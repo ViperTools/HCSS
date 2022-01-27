@@ -1,75 +1,76 @@
 #pragma once
 
 #include "../Lexer/Token.hpp"
+#include <utility>
 #include <vector>
 #include <variant>
-using std::vector;
-
 #include "Grammar/AtRule.hpp"
 #include "Grammar/Function.hpp"
 #include "Grammar/QualifiedRule.hpp"
 #include "Grammar/SimpleBlock.hpp"
 #include "Grammar/Selector.hpp"
 #include "ParserMacros.hpp"
+using std::vector;
 
-#define Reconsume idx--
-#define Last tokens[idx - 1]
+#define SKIP idx++
+#define RECONSUME idx--
+#define LAST tokens[idx - 1]
 
 class StyleSheetParser {
     public:
-        vector<Token> tokens;
-        vector<SyntaxNode> rules;
-        vector<SyntaxNode> Parse();
-        StyleSheetParser(vector<Token> tokens)
-            : tokens(tokens)
+        vector<SYNTAX_NODE> parse();
+        explicit StyleSheetParser(vector<Token> tokens)
+            : tokens(std::move(tokens))
         {};
     private:
+        vector<Token> tokens;
+        vector<SYNTAX_NODE> rules;
         int idx = 0;
         bool top = true;
-        Token* Peek();
-        void Ignore();
-        bool Check(TokenType type);
-        Token Consume();
-        Token Consume(TokenType type, string error);
-        AtRule ConsumeAtRule();
-        Function ConsumeFunction();
-        QualifiedRule ConsumeQualifiedRule();
-        SimpleBlock ConsumeSimpleBlock();
-        ComponentValue ConsumeComponentValue();
-        vector<SyntaxNode> ConsumeRulesList();
+        Token* peek();
+        bool check(TokenType type);
+        Token consume();
+        Token consume(TokenType type, const string& error);
+        AtRule consumeAtRule();
+        Function consumeFunction();
+        QualifiedRule consumeQualifiedRule();
+        SimpleBlock consumeSimpleBlock();
+        COMPONENT_VALUE consumeComponentValue();
+        vector<SYNTAX_NODE> consumeRulesList();
 };
+
+#define IGNORE_WHITESPACE if (checkToken(WHITESPACE)) idx++
 
 class SelectorParser {
     public:
-        QualifiedRule rule;
-        vector<ComplexSelector> Parse();
-        SelectorParser(QualifiedRule rule)
-            : rule(rule)
+        vector<ComplexSelector> parse();
+        explicit SelectorParser(QualifiedRule rule)
+            : rule(std::move(rule))
         {};
     private:
+        QualifiedRule rule;
         int idx = 0;
-        ComponentValue* Peek();
-        ComponentValue Consume();
-        Token* PeekToken();
-        Token ConsumeToken();
-        Token ConsumeToken(TokenType type, string error);
-        bool IsToken();
-        bool CheckToken(TokenType type);
-        bool CheckToken(string lexeme);
-        ComplexSelector ConsumeComplexSelector();
-        CompoundSelector ConsumeCompoundSelector();
-        AttrMatcher ConsumeAttrMatcher();
-        Combinator ConsumeCombinator();
-        NsPrefix ConsumeNsPrefix();
-        WqName ConsumeWqName();
-        TypeSelector ConsumeTypeSelector();
-        IdSelector ConsumeIdSelector();
-        ClassSelector ConsumeClassSelector();
-        SubclassSelector ConsumeSubclassSelector();
-        PseudoClassSelector ConsumePseudoClassSelector();
-        PseudoElementSelector ConsumePseudoElementSelector();
-        AttributeSelector ConsumeAttributeSelector();
-        RelativeSelector ConsumeRelativeSelector();
-        SimpleSelector ConsumeSimpleSelector();
-        vector<Token> ConsumeDeclarationValue(bool any = false);
+        COMPONENT_VALUE* peek();
+        COMPONENT_VALUE consume();
+        Token* peekToken();
+        Token consumeToken();
+        Token consumeToken(TokenType type, const string& error);
+        bool isToken();
+        bool checkToken(TokenType type);
+        bool checkToken(const wstring& lexeme);
+        ComplexSelector consumeComplexSelector();
+        CompoundSelector consumeCompoundSelector();
+        ATTR_MATCHER consumeAttrMatcher();
+        COMBINATOR consumeCombinator();
+        NS_PREFIX consumeNsPrefix();
+        WQ_NAME consumeWqName();
+        TYPE_SELECTOR consumeTypeSelector();
+        CLASS_SELECTOR consumeClassSelector();
+        SUBCLASS_SELECTOR consumeSubclassSelector();
+        PseudoClassSelector consumePseudoClassSelector();
+        PSEUDO_ELEMENT_SELECTOR consumePseudoElementSelector();
+        AttributeSelector consumeAttributeSelector();
+        RelativeSelector consumeRelativeSelector();
+        SIMPLE_SELECTOR consumeSimpleSelector();
+        vector<Token> consumeDeclarationValue(bool any = false);
 };

@@ -4,10 +4,10 @@
 #include <iostream>
 
 int main() {
-	Lexer lexer("CSS/test.css");
-	vector<Token> tokens = lexer.Lex();
+	Lexer lexer(R"(C:\Users\User\CLionProjects\CSS\CSS\test.css)");
+	vector<Token> tokens = lexer.lex();
 	StyleSheetParser parser(tokens);
-	vector<SyntaxNode> nodes = parser.Parse();
+	vector<SYNTAX_NODE> nodes = parser.parse();
 	SyntaxNodeVisitor visitor;
 	visitor.Visit(nodes);
 	return 0;

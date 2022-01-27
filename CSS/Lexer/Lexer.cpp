@@ -1,142 +1,153 @@
 #include "Lexer.hpp"
-#include <cstdarg>
 #include <iostream>
 using std::get;
+using std::to_wstring;
 
 // Helper Functions
 
-bool strcompi(string str1, string str2) {
+bool strcompi(wstring str1, wstring str2) {
 	if (str1.length() == str2.length()) {
 		return std::equal(str2.begin(), str2.end(),
-			str1.begin(), [](char a, char b) -> bool { return tolower(a) == tolower(b); });
+			str1.begin(), [](wchar_t a, wchar_t b) -> bool { return tolower(a) == tolower(b); });
 	}
 	return false;
 }
 
-bool isHex(char c) {
+bool isHex(wchar_t c) {
 	return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
-bool nonAscii(char c) {
+bool nonAscii(wchar_t c) {
 	return c >= 128;
 }
 
-bool identStartCodePoint(char c) {
+bool identStartCodePoint(wchar_t c) {
 	return isalpha(c) || nonAscii(c) || c == '_';
 }
 
-bool identCodePoint(char c) {
+bool identCodePoint(wchar_t c) {
 	return identStartCodePoint(c) || isdigit(c) || c == '-';
 }
 
-bool isSpace(char c) {
+bool isSpace(wchar_t c) {
 	return c == '\t' || c == '\n' || c == ' ';
 }
 
 // Main Lexer
 
-vector<Token> Lexer::Lex() {
-	while (true) {
+vector<Token> Lexer::lex() {
+	while (reader.peek() != EOF) {
 		current = reader.get();
 		switch (current) {
-			case '(': AddToken(LEFT_PAREN); break;
-			case ')': AddToken(RIGHT_PAREN); break;
-			case '[': AddToken(RIGHT_BRACKET); break;
-			case ']': AddToken(LEFT_BRACKET); break;
-			case '{': AddToken(LEFT_BRACE); break;
-			case '}': AddToken(RIGHT_BRACE); break;
-			case ',': AddToken(COMMA); break;
-			case ':': AddToken(COLON); break;
-			case ';': AddToken(SEMICOLON); break;
+			case '(':
+                addToken(LEFT_PAREN); break;
+			case ')':
+                addToken(RIGHT_PAREN); break;
+			case '[':
+                addToken(RIGHT_BRACKET); break;
+			case ']':
+                addToken(LEFT_BRACKET); break;
+			case '{':
+                addToken(LEFT_BRACE); break;
+			case '}':
+                addToken(RIGHT_BRACE); break;
+			case ',':
+                addToken(COMMA); break;
+			case ':':
+                addToken(COLON); break;
+			case ';':
+                addToken(SEMICOLON); break;
 			case '\n': {
 				line++;
 			}
-			case '\t': case ' ': ConsumeWhitespace(); break;
-			case '\'': case '"': ConsumeString(); break;
+			case '\t': case ' ':
+                consumeWhitespace(); break;
+			case '\'': case '"':
+                consumeString(); break;
 			case '#': {
 				if (identCodePoint(reader.peek())) {
-					ConsumeHash();
+                    consumeHash();
 				}
 				else if (reader.peek() == '\\') {
-					char next = reader.ignore().peek();
+                    wchar_t next = reader.ignore().peek();
 					reader.unget();
 					if (next != '\n') {
-						ConsumeHash();
+                        consumeHash();
 					}
 				}
 				else {
-					AddToken(DELIM);
+                    addToken(DELIM);
 				}
 				break;
 			}
 			case '+': case '.': {
 				if (isdigit(reader.peek())) {
 					reader.unget();
-					ConsumeNumericToken();
+                    consumeNumericToken();
 				}
 				else {
-					AddToken(DELIM);
+                    addToken(DELIM);
 				}
 				break;
 			}
 			case '-': {
 				if (isdigit(reader.peek())) {
 					reader.unget();
-					ConsumeNumericToken();
+                    consumeNumericToken();
 				}
 				else if (reader.peek() == '-') {
 					if (reader.ignore().peek() == '>') {
-						AddToken(CDC);
+                        addToken(CDC);
 					}
 					else {
 						reader.unget();
 					}
-					if (IsIdentSequence()) {
+					if (isIdentSequence()) {
 						reader.unget();
-						ConsumeIdentLike();
+                        consumeIdentLike();
 					}
 				}
-				else if (IsIdentSequence()) {
+				else if (isIdentSequence()) {
 					reader.unget();
-					ConsumeIdentLike();
+                    consumeIdentLike();
 				}
 				else {
-					AddToken(DELIM);
+                    addToken(DELIM);
 				}
 				break;
 			}
 			case '<': {
 				if (reader.peek() == '!') {
 					if (reader.ignore().get() == '-' && reader.peek() == '-') {
-						AddToken(CDO);
+                        addToken(CDO);
 					}
 					else {
 						reader.unget();
 						reader.unget();
-						AddToken(DELIM);
+                        addToken(DELIM);
 					}
 				}
 				else {
-					AddToken(DELIM);
+                    addToken(DELIM);
 				}
 				break;
 			}
 			case '@': {
-				if (IsIdentSequence()) {
-					tokens.push_back(Token(AT_KEYWORD, ConsumeIdent()));
+				if (isIdentSequence()) {
+					tokens.emplace_back(AT_KEYWORD, consumeIdent());
 				}
 				else {
-					AddToken(DELIM);
+                    addToken(DELIM);
 				}
 				break;
 			}
 			case '\\': {
 				if (reader.peek() != '\n') {
 					reader.unget();
-					ConsumeIdentLike();
+                    consumeIdentLike();
 				}
 				else {
-					AddToken(DELIM);
+                    addToken(DELIM);
 				}
 				break;
 			}
@@ -153,51 +164,48 @@ vector<Token> Lexer::Lex() {
 			default: {
 				if (isdigit(current)) {
 					reader.unget();
-					ConsumeNumericToken();
+                    consumeNumericToken();
 				}
 				else if (identStartCodePoint(current)) {
 					reader.unget();
-					ConsumeIdentLike();
-				}
-				else if (current == EOF) {
-					tokens.push_back(Token(T_EOF));
-					return tokens;
+                    consumeIdentLike();
 				}
 				else {
-					AddToken(DELIM);
+                    addToken(DELIM);
 				}
 				break;
 			}
 		}
 	}
-	return tokens;
+    tokens.emplace_back(T_EOF);
+    return tokens;
 }
 
-void Lexer::AddToken(TokenType type) {
-	tokens.push_back(Token(type, string(1, current), reader.tellg(), line));
+void Lexer::addToken(TokenType type) {
+	tokens.emplace_back(type, wstring(1, current), reader.tellg(), line);
 }
 
-void Lexer::ConsumeWhitespace() {
-	Token t(WHITESPACE, string(1, current), reader.tellg(), line);
+void Lexer::consumeWhitespace() {
+	Token t(WHITESPACE, wstring(1, current), (wchar_t) reader.tellg(), line);
 	while (isSpace(reader.peek())) {
-		t.lexeme += reader.get();
+		t.lexeme += to_wstring(reader.get());
 	}
 	tokens.push_back(t);
 }
 
-char Lexer::ConsumeEscapedCodePoint() {
-	char c = reader.get();
+wchar_t Lexer::consumeEscapedCodePoint() {
+    int c = reader.get();
 	if (c != '\n') {
 		if (isHex(c)) {
-			string hex = string(1, c);
+			wstring hex = wstring(1, c);
 			while (hex.size() < 6 && isHex(reader.peek())) {
-				hex += reader.get();
+				hex += to_wstring(reader.get());
 			}
 			int n = std::stoi(hex, nullptr, 16);
 			if (n == 0 || n > 1114111 || (n >= 55296 && n <= 57343)) {
 				return '\0';
 			}
-			return n;
+			return  n;
 		}
 		else if (c == EOF) {
 			return '\0';
@@ -212,36 +220,36 @@ char Lexer::ConsumeEscapedCodePoint() {
 	return '\0';
 }
 
-void Lexer::ConsumeString() {
-	Token t(STRING, "", reader.tellg(), line);
+void Lexer::consumeString() {
+	Token t(STRING, {}, (wchar_t) reader.tellg(), line);
 	while (reader.peek() != EOF) {
-		char c = reader.get();
+        int c = reader.get();
 		switch (c) {
 			case '"':
 			case EOF: tokens.push_back(t); return;
 			case '\n': {
 				reader.unget();
-				tokens.push_back(Token(BAD_STRING, t.lexeme));
+				tokens.emplace_back(BAD_STRING, t.lexeme);
 				return;
 			}
 			case '\\': {
-				t.lexeme += ConsumeEscapedCodePoint();
+				t.lexeme += consumeEscapedCodePoint();
 				break;
 			}
-			default: t.lexeme += c;
+			default: t.lexeme += to_wstring(c);
 		}
 	}
 }
 
-string Lexer::ConsumeIdent() {
-	string result;
+wstring Lexer::consumeIdent() {
+	wstring result;
 	while (reader.peek() != EOF) {
-		char c = reader.get();
+        wchar_t c = reader.get();
 		if (identCodePoint(c)) {
 			result += c;
 		}
 		else if (c == '\\' && reader.peek() != '\n') {
-			result += ConsumeEscapedCodePoint();
+			result += consumeEscapedCodePoint();
 		}
 		else {
 			reader.unget();
@@ -251,8 +259,8 @@ string Lexer::ConsumeIdent() {
 	return result;
 }
 
-bool Lexer::IsIdentSequence() {
-	char next = reader.peek();
+bool Lexer::isIdentSequence() {
+    wchar_t next = reader.peek();
 	if (next == '-') {
 		next = reader.ignore().peek();
 		reader.unget();
@@ -276,33 +284,33 @@ bool Lexer::IsIdentSequence() {
 	return false;
 }
 
-void Lexer::ConsumeHash() {
-	Token t(HASH, "", reader.tellg(), line);
-	if (IsIdentSequence()) {
-		t.flags["type"] = "id";
+void Lexer::consumeHash() {
+	Token t(HASH, {} , (wchar_t) reader.tellg(), line);
+	if (isIdentSequence()) {
+		t.flags["type"] = L"id";
 	}
-	t.lexeme = ConsumeIdent();
+	t.lexeme = consumeIdent();
 	tokens.push_back(t);
 }
 
-tuple<string, string> Lexer::ConsumeNumber() {
-	string type = "integer";
-	string repr;
-	char next = reader.peek();
+tuple<wstring, wstring> Lexer::consumeNumber() {
+	wstring type = L"integer";
+	wstring repr;
+    wchar_t next = reader.peek();
 	if (next == '+' || next == '-') {
-		repr += reader.get();
+		repr += to_wstring(reader.get());
 		next = reader.peek();
 	}
 	while (isdigit(next)) {
-		repr += reader.get();
+		repr += to_wstring(reader.get());
 		next = reader.peek();
 	}
 	if (next == '.') {
 		if (isdigit(reader.ignore().peek())) {
-			type = "number";
+			type = L"number";
 			repr += next;
 			while (isdigit(reader.peek())) {
-				repr += reader.get();
+				repr += to_wstring(reader.get());
 			}
 			next = reader.peek();
 		}
@@ -311,17 +319,17 @@ tuple<string, string> Lexer::ConsumeNumber() {
 		}
 	}
 	if (next == 'e' || next == 'E') {
-		char c = reader.ignore().peek();
-		string suffix(1, next);
+        wchar_t c = reader.ignore().peek();
+		wstring suffix(1, next);
 		if (c == '+' || c == '-') {
 			reader.ignore();
 			suffix += c;
 		}
 		if (isdigit(reader.peek())) {
 			repr += suffix;
-			type = "number";
+			type = L"number";
 			while (isdigit(reader.peek())) {
-				repr += reader.get();
+				repr += to_wstring(reader.get());
 			}
 		}
 		else {
@@ -331,10 +339,10 @@ tuple<string, string> Lexer::ConsumeNumber() {
 	return std::make_tuple(repr, type);
 }
 
-void Lexer::ConsumeNumericToken() {
-	tuple<string, string> number = ConsumeNumber();
+void Lexer::consumeNumericToken() {
+	tuple<wstring, wstring> number = consumeNumber();
 	TokenType type;
-	if (IsIdentSequence()) {
+	if (isIdentSequence()) {
 		type = DIMENSION;
 	}
 	else if (reader.peek() == '%') {
@@ -343,83 +351,85 @@ void Lexer::ConsumeNumericToken() {
 	else {
 		type = NUMBER;
 	}
-	Token t(type, get<0>(number), reader.tellg(), line);
+	Token t(type, get<0>(number), (wchar_t) reader.tellg(), line);
 	t.flags["type"] = get<1>(number);
 	if (type == DIMENSION) {
-		t.flags["unit"] = ConsumeIdent();
+		t.flags["unit"] = consumeIdent();
 	}
 	tokens.push_back(t);
 }
 
-void Lexer::ConsumeIdentLike() {
-	string s = ConsumeIdent();
+void Lexer::consumeIdentLike() {
+	wstring s = consumeIdent();
 	if (reader.peek() == '(') {
 		reader.ignore();
-		if (strcompi(s, "url")) {
+		if (strcompi(s, L"url")) {
 			while (isSpace(reader.peek()) && isSpace(reader.ignore().peek()));
 			if (reader.peek() == '"' || reader.peek() == '\'') {
-				tokens.push_back(Token(FUNCTION, s, reader.tellg(), line));
+				tokens.emplace_back(FUNCTION, s, reader.tellg(), line);
 			}
 			else {
-				ConsumeUrl();
+                consumeUrl();
 			}
 		}
 		else {
-			tokens.push_back(Token(FUNCTION, s, reader.tellg(), line));
+			tokens.emplace_back(FUNCTION, s, reader.tellg(), line);
 		}
 	}
 	else {
-		tokens.push_back(Token(IDENT, s, reader.tellg(), line));
+		tokens.emplace_back(IDENT, s, reader.tellg(), line);
 	}
 }
 
-void Lexer::SkipSpace() {
+void Lexer::skipSpace() {
 	while (isSpace(reader.peek())) reader.ignore();
 }
 
-void Lexer::ConsumeUrl() {
-	Token t(URL, "", reader.tellg(), line);
-	SkipSpace();
+void Lexer::consumeUrl() {
+	Token t(URL, {}, (wchar_t) reader.tellg(), line);
+    skipSpace();
 	while (reader.peek() != EOF) {
-		char c = reader.get();
+		int c = reader.get();
 		switch (c) {
 			case EOF:
 			case ')': tokens.push_back(t); return;
-			case ' ': case '\n': case '\t': SkipSpace(); break;
+			case ' ': case '\n': case '\t':
+                skipSpace(); break;
 			case '"':
 			case '\'':
 			case '(': {
-				ConsumeBadUrl();
-				AddToken(BAD_URL);
+                consumeBadUrl();
+                addToken(BAD_URL);
 				return;
 			}
 			case '\\': {
 				if (reader.peek() != '\n') {
-					t.lexeme += ConsumeEscapedCodePoint();
+					t.lexeme += consumeEscapedCodePoint();
 				}
 				else {
-					ConsumeBadUrl();
-					AddToken(BAD_URL);
+                    consumeBadUrl();
+                    addToken(BAD_URL);
 					return;
 				}
 				break;
 			}
-			default: t.lexeme += c; break;
+			default: t.lexeme += to_wstring(c); break;
 		}
 	}
 }
 
-void Lexer::ConsumeBadUrl() {
+void Lexer::consumeBadUrl() {
 	while (reader.peek() != EOF) {
-		char c = reader.get();
+		int c = reader.get();
 		switch (c) {
 			case ')': return;
 			case '\\': {
 				if (reader.peek() != '\n') {
-					ConsumeEscapedCodePoint();
+                    consumeEscapedCodePoint();
 				}
 				break;
 			}
+            default: break;
 		}
 	}
 }

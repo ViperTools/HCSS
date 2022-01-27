@@ -5,15 +5,16 @@
 using std::string;
 #include <map>
 using std::map;
+using std::wstring;
 
 class Token {
 	public:
 		TokenType type;
-		string lexeme;
+		wstring lexeme;
 		int line;
 		int position;
-		map<string, string> flags;
-		Token(TokenType type, string lexeme = "", int position = -1, int line = -1)
+		map<string, wstring> flags;
+		explicit Token(TokenType type, const wstring& lexeme = {}, int position = -1, int line = -1)
 			: type(type),
 			lexeme(lexeme),
 			position(position - lexeme.size()),

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../ParserMacros.hpp"
+#include <utility>
 #include <vector>
 #include <optional>
 #include <variant>
@@ -13,19 +14,19 @@ using std::nullopt;
 using std::monostate;
 
 // [ <ident-token> | '*' ]? '|'
-#define NsPrefix pair<optional<Token>, Token>
+#define NS_PREFIX pair<optional<Token>, Token>
 
 // <ns-prefix>? <ident-token>
-#define WqName pair<optional<NsPrefix>, Token>
+#define WQ_NAME pair<optional<NS_PREFIX>, Token>
 
 // [ '~' | '|' | '^' | '$' | '*' ]? '='
-#define AttrMatcher pair<optional<Token>, Token>
+#define ATTR_MATCHER pair<optional<Token>, Token>
 
 // i
-#define AttrModifier Token
+#define ATTR_MODIFIER Token
 
 // '>' | '+' | '~' | [ '|' '|' ]
-#define Combinator variant<monostate, Token, pair<Token, Token>>
+#define COMBINATOR variant<monostate, Token, pair<Token, Token>>
 
 /*
 '[' <wq-name> ']' |
@@ -34,43 +35,43 @@ using std::monostate;
 class AttributeSelector {
     public:
         Token openBracket;
-        WqName name;
-        optional<AttrMatcher> matcher = nullopt;
+        WQ_NAME name;
+        optional<ATTR_MATCHER> matcher = nullopt;
         optional<Token> tok = nullopt;
         optional<Token> modifier = nullopt;
         Token closeBracket;
-        AttributeSelector(Token openBracket, WqName name, Token closeBracket)
-            : openBracket(openBracket),
-            name(name),
-            closeBracket(closeBracket)
+        AttributeSelector(Token openBracket, WQ_NAME name, Token closeBracket)
+            : openBracket(std::move(openBracket)),
+            name(std::move(name)),
+            closeBracket(std::move(closeBracket))
         {};
-        AttributeSelector(Token openBracket, WqName name, AttrMatcher matcher, Token tok, optional<Token> modifier, Token closeBracket)
-            : openBracket(openBracket),
-            name(name),
+        AttributeSelector(Token openBracket, WQ_NAME name, ATTR_MATCHER matcher, Token tok, optional<Token> modifier, Token closeBracket)
+            : openBracket(std::move(openBracket)),
+            name(std::move(name)),
             matcher(matcher),
             tok(tok),
-            modifier(modifier),
-            closeBracket(closeBracket)
+            modifier(std::move(modifier)),
+            closeBracket(std::move(closeBracket))
         {};
 };
 
 // <wq-name> | <ns-prefix>? '*'
-#define TypeSelector WqName
+#define TYPE_SELECTOR WQ_NAME
 
 // <hash-token>
-#define IdSelector Token
+#define ID_SELECTOR Token
 
 // '.' <ident-token>
-#define ClassSelector pair<Token, Token>
+#define CLASS_SELECTOR pair<Token, Token>
 
 // <id-selector> | <class-selector> | <attribute-selector> | <pseudo-class-selector>
-#define SubclassSelector variant<monostate, IdSelector, ClassSelector, AttributeSelector, PseudoClassSelector>
+#define SUBCLASS_SELECTOR variant<monostate, ID_SELECTOR, CLASS_SELECTOR, AttributeSelector, PseudoClassSelector>
 
 // <type-selector> | <subclass-selector>
-#define SimpleSelector variant<TypeSelector, SubclassSelector>
+#define SIMPLE_SELECTOR variant<TYPE_SELECTOR, SUBCLASS_SELECTOR>
 
 // ':' <pseudo-class-selector>
-#define PseudoElementSelector pair<Token, PseudoClassSelector>
+#define PSEUDO_ELEMENT_SELECTOR pair<Token, PseudoClassSelector>
 
 /*
 ':' <ident-token> |
@@ -84,10 +85,10 @@ class PseudoClassSelector {
         optional<vector<Token>> anyValue;
         optional<Token> closeParen;
         PseudoClassSelector(Token colon, Token tok, optional<vector<Token>> anyValue = nullopt, optional<Token> closeParen = nullopt)
-            : colon(colon),
-            tok(tok),
-            anyValue(anyValue),
-            closeParen(closeParen)
+            : colon(std::move(colon)),
+            tok(std::move(tok)),
+            anyValue(std::move(anyValue)),
+            closeParen(std::move(closeParen))
         {};
 };
 
@@ -95,42 +96,42 @@ class PseudoClassSelector {
 [ <type-selector>? <subclass-selector>*
     [ <pseudo-element-selector> <pseudo-class-selector>* ]* ]!
 */
-#define PseudoSelectorPair pair<PseudoElementSelector, vector<PseudoClassSelector>>
+#define PseudoSelectorPair pair<PSEUDO_ELEMENT_SELECTOR, vector<PseudoClassSelector>>
 class CompoundSelector {
     public:
-        optional<TypeSelector> typeSelector;
-        vector<SubclassSelector> subclassSelectors;
+        optional<TYPE_SELECTOR> typeSelector;
+        vector<SUBCLASS_SELECTOR> subclassSelectors;
         vector<PseudoSelectorPair> pseudoSelectors;
-        CompoundSelector(optional<TypeSelector> typeSelector = nullopt, vector<SubclassSelector> subclassSelectors = {}, vector<PseudoSelectorPair> = {})
-            : typeSelector(typeSelector),
-            subclassSelectors(subclassSelectors),
+        explicit CompoundSelector(optional<TYPE_SELECTOR> typeSelector = nullopt, vector<SUBCLASS_SELECTOR> subclassSelectors = {}, const vector<PseudoSelectorPair>& pseudoSelectors = {})
+            : typeSelector(std::move(typeSelector)),
+            subclassSelectors(std::move(subclassSelectors)),
             pseudoSelectors(pseudoSelectors)
         {};
 };
 
 // <compound-selector> [ <combinator>? <compound-selector> ]*
-#define ComplexSelectorPair pair<Combinator, CompoundSelector>
+#define COMPLEX_SELECTOR_PAIR pair<COMBINATOR, CompoundSelector>
 class ComplexSelector {
     public:
-        vector<ComplexSelectorPair> selectors;
-        ComplexSelector(vector<ComplexSelectorPair> selectors = {})
-            : selectors(selectors)
+        vector<COMPLEX_SELECTOR_PAIR> selectors;
+        explicit ComplexSelector(vector<COMPLEX_SELECTOR_PAIR> selectors = {})
+            : selectors(std::move(selectors))
         {};
 };
 
 // <combinator>? <complex-selector>
 class RelativeSelector {
     public:
-        Combinator combinator;
+        COMBINATOR combinator;
         ComplexSelector selector;
-        RelativeSelector(Combinator combinator, ComplexSelector selector)
-            : selector(selector),
-            combinator(combinator)
+        RelativeSelector(COMBINATOR combinator, ComplexSelector selector)
+            : selector(std::move(selector)),
+            combinator(std::move(combinator))
         {};
 };
 
-#define SelectorList vector<ComplexSelector>
-#define ComplexSelectorList vector<ComplexSelector>
-#define CompoundSelectorList vector<CompoundSelector>
-#define SimpleSelectorList vector<SimpleSelector>
-#define RelativeSelectorList vector<RelativeSelector>
+#define SELECTOR_LIST vector<ComplexSelector>
+#define COMPLEX_SELECTOR_LIST vector<ComplexSelector>
+#define COMPOUND_SELECTOR_LIST vector<CompoundSelector>
+#define SIMPLE_SELECTOR_LIST vector<SIMPLE_SELECTOR>
+#define RELATIVE_SELECTOR_LIST vector<RelativeSelector>
