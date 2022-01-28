@@ -6,10 +6,10 @@
 class Function {
     public:
         Token name;
-        std::vector<COMPONENT_VALUE> components;
-        Function(Token name, std::vector<COMPONENT_VALUE> components = {})
+        std::vector<COMPONENT_VALUE> value;
+        Function(Token name, std::vector<COMPONENT_VALUE> value = {})
             : name(name),
-            components(components)
+            value(value)
         {};
 
 };

@@ -27,7 +27,7 @@ T ComponentValueParser::consume() {
         return val;
     }
     else {
-        SYNTAX_ERROR("Attempted to consume an invalid type.", nullopt);
+        SYNTAX_ERROR("Called consume method with an invalid type. The specified type does not match the next token.", nullopt);
     }
 }
 
@@ -81,9 +81,9 @@ vector<SYNTAX_NODE> BaseParser::parse() {
         SYNTAX_NODE node = i;
         if (std::holds_alternative<QualifiedRule>(node)) {
             QualifiedRule rule = std::get<QualifiedRule>(node);
-            COMPLEX_SELECTOR_LIST selectors = SelectorParser(rule.components).parse();
+            COMPLEX_SELECTOR_LIST selectors = SelectorParser(rule.prelude).parse();
             if (rule.block.has_value()) {
-                STYLE_BLOCK block = StyleBlockParser(rule.block.value().components).parse();
+                STYLE_BLOCK block = StyleBlockParser(rule.block.value().value).parse();
                 i = StyleRule(selectors, block);
             }
             else {
@@ -129,9 +129,11 @@ COMPONENT_VALUE BaseParser::consumeComponentValue() {
         auto t = consume<Token>();
         switch (t.type) {
             case LEFT_BRACE: case LEFT_BRACKET: case LEFT_PAREN: {
+                RECONSUME;
                 return consumeSimpleBlock();
             }
             case FUNCTION: {
+                RECONSUME;
                 return consumeFunction();
             }
             default: {
@@ -146,27 +148,37 @@ AtRule BaseParser::consumeAtRule() {
     Token at = consume(AT_KEYWORD, "Expected AT_KEYWORD");
     AtRule rule(at);
     while (NOT_EOF) {
-        auto t = consume<Token>();
-        switch (t.type) {
-            case T_EOF:
-            case SEMICOLON: return rule;
-            case LEFT_BRACE: {
-                rule.block = consumeSimpleBlock();
-                return rule;
+        if (check<Token>()) {
+            auto t = consume<Token>();
+            switch (t.type) {
+                case T_EOF:
+                case SEMICOLON: return rule;
+                case LEFT_BRACE: {
+                    RECONSUME;
+                    rule.block = consumeSimpleBlock();
+                    return rule;
+                }
+                default: {
+                    RECONSUME;
+                    rule.prelude.emplace_back(consumeComponentValue());
+                }
             }
-            default: {
-                RECONSUME;
-                rule.components.push_back(consumeComponentValue());
-            }
+        }
+        else if (check<SimpleBlock>() && peek<SimpleBlock>() -> open.type == LEFT_BRACE) {
+            rule.block = consume<SimpleBlock>();
+            return rule;
+        }
+        else {
+            RECONSUME;
+            rule.prelude.emplace_back(consumeComponentValue());
         }
     }
     return rule;
 }
 
 Function BaseParser::consumeFunction() {
-    RECONSUME;
-    Token ident = consume(FUNCTION, "Expected function");
-    Function f(ident);
+    Token name = consume(FUNCTION, "Expected function");
+    Function f(name);
     while (NOT_EOF) {
         auto t = consume<Token>();
         switch (t.type) {
@@ -176,7 +188,7 @@ Function BaseParser::consumeFunction() {
             }
             default: {
                 RECONSUME;
-                f.components.push_back(consumeComponentValue());
+                f.value.emplace_back(consumeComponentValue());
             }
         }
     }
@@ -186,24 +198,34 @@ Function BaseParser::consumeFunction() {
 QualifiedRule BaseParser::consumeQualifiedRule() {
     QualifiedRule rule;
     while (NOT_EOF) {
-        auto t = consume<Token>();
-        switch (t.type) {
-            case T_EOF: return rule; //NULL;
-            case LEFT_BRACE: {
-                rule.block = consumeSimpleBlock();
-                return rule;
+        if (check<Token>()) {
+            auto t = consume<Token>();
+            switch (t.type) {
+                case T_EOF: SYNTAX_ERROR("Qualified rule was not closed. Reached end of file.", nullopt);
+                case LEFT_BRACE: {
+                    RECONSUME;
+                    rule.block = consumeSimpleBlock();
+                    return rule;
+                }
+                default: {
+                    RECONSUME;
+                    rule.prelude.emplace_back(consumeComponentValue());
+                }
             }
-            default: {
-                RECONSUME;
-                rule.components.push_back(consumeComponentValue());
-            }
+        }
+        else if (check<SimpleBlock>() && peek<SimpleBlock>() -> open.type == LEFT_BRACE) {
+            rule.block = consume<SimpleBlock>();
+            return rule;
+        }
+        else {
+            RECONSUME;
+            rule.prelude.emplace_back(consumeComponentValue());
         }
     }
     return rule;
 }
 
 SimpleBlock BaseParser::consumeSimpleBlock() {
-    RECONSUME;
     auto open = consume<Token>();
     SimpleBlock block(open);
     TokenType m = mirror(open.type);
@@ -215,7 +237,7 @@ SimpleBlock BaseParser::consumeSimpleBlock() {
         }
         else {
             RECONSUME;
-            block.components.push_back(consumeComponentValue());
+            block.value.emplace_back(consumeComponentValue());
         }
     }
     return block;
@@ -229,7 +251,7 @@ COMPLEX_SELECTOR_LIST SelectorParser::parse() {
     IGNORE_WHITESPACE;
     COMPLEX_SELECTOR_LIST list;
     while (NOT_EOF) {
-        list.push_back(consumeComplexSelector());
+        list.emplace_back(consumeComplexSelector());
         if (check(COMMA)) {
             SKIP;
             IGNORE_WHITESPACE;
@@ -238,9 +260,9 @@ COMPLEX_SELECTOR_LIST SelectorParser::parse() {
     return list;
 }
 
-ComplexSelector SelectorParser::consumeComplexSelector() {
+COMPLEX_SELECTOR SelectorParser::consumeComplexSelector() {
     IGNORE_WHITESPACE;
-    vector<COMPLEX_SELECTOR_PAIR> selectors = {COMPLEX_SELECTOR_PAIR({ }, consumeCompoundSelector()) };
+    COMPLEX_SELECTOR selectors = { COMPLEX_SELECTOR_PAIR({ }, consumeCompoundSelector()) };
     IGNORE_WHITESPACE;
     while (NOT_EOF && !check(COMMA)) {
         COMBINATOR comb = consumeCombinator();
@@ -248,7 +270,7 @@ ComplexSelector SelectorParser::consumeComplexSelector() {
         selectors.emplace_back(comb, consumeCompoundSelector());
         IGNORE_WHITESPACE;
     }
-    return ComplexSelector(vector<COMPLEX_SELECTOR_PAIR>());
+    return selectors;
 }
 
 COMBINATOR SelectorParser::consumeCombinator() {
@@ -286,7 +308,7 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
                     consuming = false;
                     break;
                 }
-                subclasses.push_back(consumeSubclassSelector());
+                subclasses.emplace_back(consumeSubclassSelector());
                 break;
             }
             case COLON: {
@@ -297,12 +319,12 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
                     consuming = false;
                     break;
                 }
-                subclasses.push_back(consumeSubclassSelector());
+                subclasses.emplace_back(consumeSubclassSelector());
                 break;
             }
             case HASH:
             case LEFT_BRACKET: {
-                subclasses.push_back(consumeSubclassSelector());
+                subclasses.emplace_back(consumeSubclassSelector());
                 break;
             }
             default: {
@@ -322,7 +344,7 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
                 auto t = consume<Token>();
                 if (!check(COLON)) {
                     RECONSUME;
-                    classes.push_back(consumePseudoClassSelector());
+                    classes.emplace_back(consumePseudoClassSelector());
                 }
                 else {
                     RECONSUME;
@@ -396,6 +418,7 @@ WQ_NAME SelectorParser::consumeWqName() {
     }
 }
 
+// TODO Allow consuming a simple block
 AttributeSelector SelectorParser::consumeAttributeSelector() {
     Token open = consume(LEFT_BRACKET, "Expected [");
     WQ_NAME name = consumeWqName();
@@ -510,7 +533,7 @@ vector<COMPONENT_VALUE> SelectorParser::consumeDeclarationValue(bool any) {
                 }
                 case LEFT_PAREN: case LEFT_BRACE: case LEFT_BRACKET:
                 {
-                    opening.push_back(t.type);
+                    opening.emplace_back(t.type);
                     val.emplace_back(t);
                     break;
                 }
@@ -532,7 +555,7 @@ vector<COMPONENT_VALUE> SelectorParser::consumeDeclarationValue(bool any) {
             }
         }
         else {
-            val.push_back(consume<COMPONENT_VALUE>());
+            val.emplace_back(consume<COMPONENT_VALUE>());
         }
     }
 }
@@ -546,10 +569,11 @@ PseudoClassSelector SelectorParser::consumePseudoClassSelector() {
         else if (check(FUNCTION)) {
             auto func = consume<Token>();
             vector<COMPONENT_VALUE> any = consumeDeclarationValue(true);
-            if (check(RIGHT_PAREN)) {
-                return {colon, func, any, consume<Token>()};
-            }
-            SYNTAX_ERROR("Expected closing parenthesis", peek<Token>());
+            return {colon, func, any, consume(RIGHT_PAREN, "Expected closing parenthesis")};
+        }
+        else if (check<Function>()) {
+            Function f = consume<Function>();
+            return {colon, f.name, f.value};
         }
     }
     SYNTAX_ERROR("Expected colon or function", peek<Token>());
@@ -653,4 +677,4 @@ Declaration DeclarationParser::parse() {
     return dec;
 }
 
-#pragma endregionSSS
+#pragma endregion

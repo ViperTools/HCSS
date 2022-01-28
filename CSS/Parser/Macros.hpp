@@ -9,5 +9,6 @@ class QualifiedRule;
 class SimpleBlock;
 class StyleRule;
 
-#define SYNTAX_NODE std::variant<AtRule, Function, QualifiedRule, SimpleBlock, StyleRule>
-#define COMPONENT_VALUE std::variant<SYNTAX_NODE, Token>
+#define SYNTAX_NODE_TYPES AtRule, Function, QualifiedRule, SimpleBlock, StyleRule
+#define SYNTAX_NODE std::variant<SYNTAX_NODE_TYPES>
+#define COMPONENT_VALUE std::variant<SYNTAX_NODE_TYPES, Token>

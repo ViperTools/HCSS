@@ -111,27 +111,21 @@ class CompoundSelector {
 
 // <compound-selector> [ <combinator>? <compound-selector> ]*
 #define COMPLEX_SELECTOR_PAIR pair<COMBINATOR, CompoundSelector>
-class ComplexSelector {
-    public:
-        vector<COMPLEX_SELECTOR_PAIR> selectors;
-        explicit ComplexSelector(vector<COMPLEX_SELECTOR_PAIR> selectors = {})
-            : selectors(std::move(selectors))
-        {};
-};
+#define COMPLEX_SELECTOR vector<COMPLEX_SELECTOR_PAIR>
 
 // <combinator>? <complex-selector>
 class RelativeSelector {
     public:
         COMBINATOR combinator;
-        ComplexSelector selector;
-        RelativeSelector(COMBINATOR combinator, ComplexSelector selector)
+        COMPLEX_SELECTOR selector;
+        RelativeSelector(COMBINATOR combinator, COMPLEX_SELECTOR selector)
             : selector(std::move(selector)),
             combinator(std::move(combinator))
         {};
 };
 
-#define SELECTOR_LIST vector<ComplexSelector>
-#define COMPLEX_SELECTOR_LIST vector<ComplexSelector>
+#define SELECTOR_LIST vector<COMPLEX_SELECTOR>
+#define COMPLEX_SELECTOR_LIST vector<COMPLEX_SELECTOR>
 #define COMPOUND_SELECTOR_LIST vector<CompoundSelector>
 #define SIMPLE_SELECTOR_LIST vector<SIMPLE_SELECTOR>
 #define RELATIVE_SELECTOR_LIST vector<RelativeSelector>

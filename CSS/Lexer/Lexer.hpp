@@ -12,14 +12,6 @@ using std::tuple;
 using std::wstring;
 
 #define COLUMN ((int) reader.tellg() - posOffset)
-/* #define SKIP_CRLF if (c == '\n' && reader.peek() == '\r') reader.ignore();
-#define HANDLE_CRLF \
-SKIP_CRLF; \
-if (c == '\n' || c == '\r') { \
-    posOffset = (int) reader.tellg();\
-    line++;\
-    std::cout << "nl " << line << std::endl;\
-} */
 
 class Lexer {
 	public:

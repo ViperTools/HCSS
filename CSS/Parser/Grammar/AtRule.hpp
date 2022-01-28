@@ -8,11 +8,11 @@
 class AtRule {
     public:
         Token name;
-        std::vector<COMPONENT_VALUE> components;
+        std::vector<COMPONENT_VALUE> prelude;
         std::optional<SimpleBlock> block;
-        AtRule(Token name, std::vector<COMPONENT_VALUE> components = {}, std::optional<SimpleBlock> block = std::nullopt)
+        AtRule(Token name, std::vector<COMPONENT_VALUE> prelude = {}, std::optional<SimpleBlock> block = std::nullopt)
             : name(name),
-            components(components),
+            prelude(prelude),
             block(block)
         {};
 };

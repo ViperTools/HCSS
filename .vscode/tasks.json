@@ -6,7 +6,7 @@
         {
             "label": "gcc",
             "type": "shell",
-            "command": "gcc CSS/*.cpp CSS/*/*.cpp -std=c++2a -lstdc++ -o build/main && build/main",
+            "command": "./build.sh",
             "problemMatcher": [],
             "group": {
                 "kind": "build",

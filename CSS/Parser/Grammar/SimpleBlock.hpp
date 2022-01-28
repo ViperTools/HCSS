@@ -6,9 +6,9 @@
 class SimpleBlock {
     public:
         Token open;
-        std::vector<COMPONENT_VALUE> components;
-        SimpleBlock(Token open, std::vector<COMPONENT_VALUE> components = {})
+        std::vector<COMPONENT_VALUE> value;
+        SimpleBlock(Token open, std::vector<COMPONENT_VALUE> value = {})
             : open(open),
-            components(components)
+            value(value)
         {};
 };

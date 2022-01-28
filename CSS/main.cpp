@@ -1,6 +1,6 @@
 #include "Lexer/Lexer.hpp"
 #include "Parser/Parser.hpp"
-#include "Transpiler/Visitor.hpp"
+#include "Transpiler/Transpiler.hpp"
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -11,7 +11,7 @@ int main() {
     using std::chrono::duration;
     using std::chrono::milliseconds;
 
-	Lexer lexer(R"(C:\Users\User\CLionProjects\CSS Parser\CSS\test.css)");
+	Lexer lexer(R"(/workspace/CSS/CSS/test.css)");
     std::cout << "[DEBUG] LEXING BEGAN" << std::endl;
     auto t1 = high_resolution_clock::now();
 	vector<Token> tokens = lexer.lex();
@@ -26,7 +26,7 @@ int main() {
     duration<double, std::milli> ms2 = t4 - t3;
     std::cout << "[DEBUG] PARSING COMPLETE: " << ms2.count() << "ms" << std::endl;
     std::cout << "[DEBUG] TOTAL TIME: " << ms.count() + ms2.count() << "ms" << std::endl;
-	Visitor visitor;
-	visitor.visit(nodes);
+	Transpiler transpiler;
+	transpiler.visit(nodes);
 	return 0;
 }

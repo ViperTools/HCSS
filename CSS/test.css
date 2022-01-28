@@ -1,4 +1,4 @@
-/* @import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap'); */
+/* @import url('https://fonts.googleapis.com/css2?family=Montserrat&display=swap');
 
 * {
     tab-size: 2;
@@ -26,10 +26,10 @@ body {
 #left, #right {
     width: 13%;
     height: 100%;
-    /* background-color: rgb(41, 44, 48); */
+    
 }
 
-/* Center */
+
 
 #center {
     width: 87%;
@@ -46,7 +46,7 @@ body {
     width: 100%;
     display: flex;
     align-items: center;
-    /* box-shadow: 0 1.5px 0 0 rgba(30, 30, 30, 0.5); */
+    
 }
 
 .channel-name {
@@ -151,7 +151,7 @@ body {
     overflow: scroll;
 }
 
-/* Messages */
+
 
 .message {
     height: auto;
@@ -219,7 +219,7 @@ body {
     align-items: center;
 }
 
-/* Left */
+
 
 #left-top-bar {
     background-color: rgb(55, 58, 65);
@@ -228,7 +228,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* box-shadow: 0 1.5px 0 0 rgba(30, 30, 30, 0.5); */
+    
 }
 
 #left {
@@ -369,7 +369,7 @@ body {
     color: rgb(112, 119, 129);
 }
 
-/* Right */
+
 
 #right {
     display: flex;
@@ -385,7 +385,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* box-shadow: 0 1.5px 0 0 rgba(30, 30, 30, 0.5); */
+    
 }
 
 #users {
@@ -540,4 +540,8 @@ body {
 
 ::-webkit-scrollbar-corner {
     background: none;
+} */
+
+*test+abc[abc="def"] {
+    color: green;
 }

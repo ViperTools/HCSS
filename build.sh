@@ -1,1 +1,1 @@
-gcc CSS/*.cpp CSS/*/*.cpp -std=c++2a -lstdc++ -o build/main && build/main
+mkdir -p build && gcc CSS/*.cpp CSS/*/*.cpp -std=c++2a -lstdc++ -o build/main && build/main

@@ -6,10 +6,10 @@
 
 class QualifiedRule {
     public:
-        std::vector<COMPONENT_VALUE> components;
+        std::vector<COMPONENT_VALUE> prelude;
         std::optional<SimpleBlock> block;
-        QualifiedRule(std::vector<COMPONENT_VALUE> components = {}, std::optional<SimpleBlock> block = std::nullopt)
-            : components(components),
+        QualifiedRule(std::vector<COMPONENT_VALUE> prelude = {}, std::optional<SimpleBlock> block = std::nullopt)
+            : prelude(prelude),
             block(block)
         {};
 };

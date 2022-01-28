@@ -63,7 +63,7 @@ class SelectorParser : public ComponentValueParser {
         COMPLEX_SELECTOR_LIST parse();
         using ComponentValueParser::ComponentValueParser;
     private:
-        ComplexSelector consumeComplexSelector();
+        COMPLEX_SELECTOR consumeComplexSelector();
         CompoundSelector consumeCompoundSelector();
         ATTR_MATCHER consumeAttrMatcher();
         COMBINATOR consumeCombinator();

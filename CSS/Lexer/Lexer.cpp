@@ -1,5 +1,6 @@
 #include "../Util/util.hpp"
 #include "Lexer.hpp"
+#include "TokenType.hpp"
 #include <iostream>
 using std::get;
 using std::to_wstring;
@@ -39,9 +40,9 @@ vector<Token> Lexer::lex() {
 			case ')':
                 addToken(RIGHT_PAREN); break;
 			case '[':
-                addToken(RIGHT_BRACKET); break;
-			case ']':
                 addToken(LEFT_BRACKET); break;
+			case ']':
+                addToken(RIGHT_BRACKET); break;
 			case '{':
                 addToken(LEFT_BRACE); break;
 			case '}':
@@ -220,10 +221,10 @@ wchar_t Lexer::consumeEscapedCodePoint() {
 
 void Lexer::consumeString() {
 	Token t(STRING, {}, COLUMN, line);
+	char end = current;
 	while (true) {
         int c = reader.get();
 		switch (c) {
-			case '"':
 			case EOF: tokens.push_back(t); return;
             case '\n': {
 				reader.unget();
@@ -234,7 +235,15 @@ void Lexer::consumeString() {
 				t.lexeme += consumeEscapedCodePoint();
 				break;
 			}
-			default: t.lexeme += to_wstring(c);
+			default: {
+				if (c != end) {
+					t.lexeme += (wchar_t) c;
+				}
+				else {
+					tokens.push_back(t);
+					return;
+				}
+			}
 		}
 	}
 }
