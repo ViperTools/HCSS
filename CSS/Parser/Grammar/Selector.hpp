@@ -84,7 +84,7 @@ class PseudoClassSelector {
         Token tok;
         optional<vector<COMPONENT_VALUE>> anyValue;
         optional<Token> closeParen;
-        PseudoClassSelector(Token colon, Token tok, optional<vector<Token>> anyValue = nullopt, optional<Token> closeParen = nullopt)
+        PseudoClassSelector(Token colon, Token tok, optional<vector<COMPONENT_VALUE>> anyValue = nullopt, optional<Token> closeParen = nullopt)
             : colon(std::move(colon)),
             tok(std::move(tok)),
             anyValue(std::move(anyValue)),

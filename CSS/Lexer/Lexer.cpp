@@ -4,6 +4,8 @@
 using std::get;
 using std::to_wstring;
 
+#pragma region Helpers
+
 bool isHex(wchar_t c) {
 	return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
@@ -24,7 +26,9 @@ bool isSpace(wchar_t c) {
 	return c == '\t' || c == '\n' || c == ' ';
 }
 
-// Main Lexer
+#pragma endregion
+
+#pragma region Lexer
 
 vector<Token> Lexer::lex() {
 	while (reader.peek() != EOF) {
@@ -425,3 +429,5 @@ void Lexer::consumeBadUrl() {
 		}
 	}
 }
+
+#pragma endregion

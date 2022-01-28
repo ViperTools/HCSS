@@ -4,7 +4,7 @@
 #include <iostream>
 
 int main() {
-	Lexer lexer(R"(/workspace/CSS/CSS/test.css)");
+	Lexer lexer(R"(/workspace/CSS Parser/CSS Parser/test.css)");
 	vector<Token> tokens = lexer.lex();
 	BaseParser parser(tokens);
 	vector<SYNTAX_NODE> nodes = parser.parse();

@@ -35,7 +35,7 @@ class ComponentValueParser {
         int idx = 0;
         template<typename T = COMPONENT_VALUE> T consume();
         Token consume(TokenType type, const string& error);
-        template<typename T = COMPONENT_VALUE> T* peek();
+        template<typename T = COMPONENT_VALUE> optional<T> peek();
         template<typename T = COMPONENT_VALUE> bool check();
         bool check(TokenType type);
         bool check(const wstring& lexeme);
