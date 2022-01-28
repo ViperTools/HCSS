@@ -1,9 +1,9 @@
 #include "../Util/util.hpp"
 #include "Parser.hpp"
-#include "Errors/SyntaxError.hpp"
 #include <deque>
 #include <cctype>
 #include <utility>
+#include <iostream>
 
 #pragma region Helpers
 TokenType mirror(TokenType type) {
@@ -11,7 +11,7 @@ TokenType mirror(TokenType type) {
         case LEFT_BRACE: return RIGHT_BRACE;
         case LEFT_BRACKET: return RIGHT_BRACKET;
         case LEFT_PAREN: return RIGHT_PAREN;
-        default: throw SyntaxError("Expected {, [, or (");
+        default: SYNTAX_ERROR("Expected {, [, or (", nullopt);
     }
 }
 
@@ -22,10 +22,12 @@ TokenType mirror(TokenType type) {
 template<typename T>
 T ComponentValueParser::consume() {
     if (check<T>()) {
-        return *peek<T>();
+        T val = *peek<T>();
+        idx++;
+        return val;
     }
     else {
-        throw SyntaxError("Attempted to consume an invalid type.");
+        SYNTAX_ERROR("Attempted to consume an invalid type.", nullopt);
     }
 }
 
@@ -34,7 +36,7 @@ Token ComponentValueParser::consume(TokenType type, const string& error) {
     if (t.type == type) {
         return t;
     }
-    throw SyntaxError(error, t);
+    SYNTAX_ERROR(error, t);
 }
 
 template<>
@@ -237,6 +239,7 @@ COMPLEX_SELECTOR_LIST SelectorParser::parse() {
 }
 
 ComplexSelector SelectorParser::consumeComplexSelector() {
+    IGNORE_WHITESPACE;
     vector<COMPLEX_SELECTOR_PAIR> selectors = {COMPLEX_SELECTOR_PAIR({ }, consumeCompoundSelector()) };
     IGNORE_WHITESPACE;
     while (NOT_EOF && !check(COMMA)) {
@@ -257,7 +260,7 @@ COMBINATOR SelectorParser::consumeCombinator() {
         case '|': {
             Token t2 = consume(DELIM, "Expected DELIM");
             if (t2.lexeme != L"|") {
-                throw SyntaxError("Expected second |", t2);
+                SYNTAX_ERROR("Expected second |", t2);
             }
             return pair<Token, Token>(tok, t2);
         }
@@ -312,6 +315,7 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
     while (check(COLON)) {
         auto colon = consume<Token>();
         if (check(COLON)) {
+            RECONSUME;
             PSEUDO_ELEMENT_SELECTOR el = consumePseudoElementSelector();
             vector<PseudoClassSelector> classes;
             while (check(COLON)) {
@@ -333,7 +337,7 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
         }
     }
     if (!type.has_value() && subclasses.empty() && pseudos.empty()) {
-        throw SyntaxError("A compound selector requires at least one value. If there is a value at this position, it is most likely invalid.", peek<Token>());
+        SYNTAX_ERROR("A compound selector requires at least one value. If there is a value at this position, it is most likely invalid.", peek<Token>());
     }
     return CompoundSelector(type, subclasses, pseudos);
 }
@@ -348,13 +352,13 @@ ATTR_MATCHER SelectorParser::consumeAttrMatcher() {
         case '*': break;
         case '=': return ATTR_MATCHER(nullopt, t);
         default: {
-            throw SyntaxError("Expected ~, |, ^, $, *, or =", t);
+            SYNTAX_ERROR("Expected ~, |, ^, $, *, or =", t);
         }
     }
     if (check(DELIM) && peek<Token>() -> lexeme == L"=") {
         return ATTR_MATCHER(t, consume<Token>());
     }
-    throw SyntaxError("Expected =", peek<Token>());
+    SYNTAX_ERROR("Expected =", peek<Token>());
 }
 
 NS_PREFIX SelectorParser::consumeNsPrefix() {
@@ -364,13 +368,13 @@ NS_PREFIX SelectorParser::consumeNsPrefix() {
         if (bar.lexeme == L"|") {
             return NS_PREFIX(t, bar);
         }
-        throw SyntaxError("Expected |", bar);
+        SYNTAX_ERROR("Expected |", bar);
     }
     else if (t.type == DELIM && t.lexeme == L"|") {
         return NS_PREFIX(nullopt, t);
     }
     else {
-        throw SyntaxError("Expected |", t);
+        SYNTAX_ERROR("Expected |", t);
     }
 }
 
@@ -388,7 +392,7 @@ WQ_NAME SelectorParser::consumeWqName() {
         return WQ_NAME(consumeNsPrefix(), consume(IDENT, "Expected identifier"));
     }
     else {
-        throw SyntaxError("Expected NS_PREFIX or identifier", peek<Token>());
+        SYNTAX_ERROR("Expected NS_PREFIX or identifier", peek<Token>());
     }
 }
 
@@ -400,7 +404,7 @@ AttributeSelector SelectorParser::consumeAttributeSelector() {
     }
     ATTR_MATCHER matcher = consumeAttrMatcher();
     if (!check(STRING) && !check(IDENT)) {
-        throw SyntaxError("Expected string or ident", peek<Token>());
+        SYNTAX_ERROR("Expected string or ident", peek<Token>());
     }
     auto tok = consume<Token>();
     if (check(RIGHT_BRACKET)) {
@@ -411,9 +415,9 @@ AttributeSelector SelectorParser::consumeAttributeSelector() {
         if (check(RIGHT_BRACKET)) {
             return {open, name, matcher, tok, mod, consume<Token>()};
         }
-        throw SyntaxError("Expected closing bracket", peek<Token>());
+        SYNTAX_ERROR("Expected closing bracket", peek<Token>());
     }
-    throw SyntaxError("Expected modifier or closing token", peek<Token>());
+    SYNTAX_ERROR("Expected modifier or closing token", peek<Token>());
 }
 
 TYPE_SELECTOR SelectorParser::consumeTypeSelector() {
@@ -425,7 +429,7 @@ TYPE_SELECTOR SelectorParser::consumeTypeSelector() {
             if (check(L"*")) {
                 return TYPE_SELECTOR(prefix, consume(DELIM, "Expected delim"));
             }
-            throw SyntaxError("Expected *", peek<Token>());
+            SYNTAX_ERROR("Expected *", peek<Token>());
         }
         else {
             return TYPE_SELECTOR(nullopt, t);
@@ -447,7 +451,7 @@ TYPE_SELECTOR SelectorParser::consumeTypeSelector() {
             return consumeWqName();
         }
     }
-    throw SyntaxError("Expected WQ_NAME or [NS_PREFIX? '*']", t);
+    SYNTAX_ERROR("Expected WQ_NAME or [NS_PREFIX? '*']", t);
 }
 
 CLASS_SELECTOR SelectorParser::consumeClassSelector() {
@@ -456,9 +460,9 @@ CLASS_SELECTOR SelectorParser::consumeClassSelector() {
         if (check(IDENT)) {
             return CLASS_SELECTOR(dot, consume<Token>());
         }
-        throw SyntaxError("Expected identifier", dot);
+        SYNTAX_ERROR("Expected identifier", dot);
     }
-    throw SyntaxError("Expected .", peek<Token>());
+    SYNTAX_ERROR("Expected .", peek<Token>());
 }
 
 SUBCLASS_SELECTOR SelectorParser::consumeSubclassSelector() {
@@ -545,10 +549,10 @@ PseudoClassSelector SelectorParser::consumePseudoClassSelector() {
             if (check(RIGHT_PAREN)) {
                 return {colon, func, any, consume<Token>()};
             }
-            throw SyntaxError("Expected closing parenthesis", peek<Token>());
+            SYNTAX_ERROR("Expected closing parenthesis", peek<Token>());
         }
     }
-    throw SyntaxError("Expected colon or function", peek<Token>());
+    SYNTAX_ERROR("Expected colon or function", peek<Token>());
 }
 
 PSEUDO_ELEMENT_SELECTOR SelectorParser::consumePseudoElementSelector() {

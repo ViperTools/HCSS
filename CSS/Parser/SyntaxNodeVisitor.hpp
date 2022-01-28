@@ -9,10 +9,10 @@
 
 class SyntaxNodeVisitor {
     public:
-        void Visit(std::vector<SYNTAX_NODE> nodes);
-        void Visit(AtRule rule) const;
-        void Visit(Function function) const;
-        void Visit(QualifiedRule rule) const;
-        void Visit(SimpleBlock block) const;
-        void Visit(StyleRule rule) const;
+        virtual void visit(const std::vector<SYNTAX_NODE>& nodes) const = 0;
+        virtual void visit(AtRule rule) const = 0;
+        virtual void visit(Function function) const = 0;
+        virtual void visit(QualifiedRule rule) const = 0;
+        virtual void visit(SimpleBlock block) const = 0;
+        virtual void visit(StyleRule rule) const = 0;
 };

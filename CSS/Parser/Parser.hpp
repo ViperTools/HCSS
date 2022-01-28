@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Errors/SyntaxError.hpp"
 #include "../Lexer/Token.hpp"
 #include <utility>
 #include <vector>
@@ -14,10 +15,11 @@
 #include "Macros.hpp"
 using std::vector;
 
+#define SYNTAX_ERROR(s, t) throw SyntaxError(s, t, __LINE__, __FILE__)
 #define SKIP idx++
 #define RECONSUME idx--
 #define IGNORE_WHITESPACE if (check(WHITESPACE)) idx++
-#define NOT_EOF idx < values.size() && !check(T_EOF)
+#define NOT_EOF (idx < values.size() && !check(T_EOF))
 
 class ComponentValueParser {
     public:

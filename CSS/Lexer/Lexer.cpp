@@ -52,10 +52,8 @@ vector<Token> Lexer::lex() {
                 addToken(COLON); break;
 			case ';':
                 addToken(SEMICOLON); break;
-			case '\n': {
-				line++;
-			}
-			case '\t': case ' ':
+			case '\n': line++;
+            case '\t': case ' ':
                 consumeWhitespace(); break;
 			case '\'': case '"':
                 consumeString(); break;
@@ -177,13 +175,18 @@ vector<Token> Lexer::lex() {
 }
 
 void Lexer::addToken(TokenType type) {
-	tokens.emplace_back(type, wstring(1, current), reader.tellg(), line);
+	tokens.emplace_back(type, wstring(1, current), COLUMN, line);
 }
 
 void Lexer::consumeWhitespace() {
-	Token t(WHITESPACE, wstring(1, current), (wchar_t) reader.tellg(), line);
+	Token t(WHITESPACE, wstring(1, current), COLUMN, line);
 	while (isSpace(reader.peek())) {
-		t.lexeme += to_wstring(reader.get());
+        auto c = (wchar_t) reader.get();
+        if (c == '\n') {
+            posOffset = (int) reader.tellg();
+            line++;
+        }
+		t.lexeme += c;
 	}
 	tokens.push_back(t);
 }
@@ -216,13 +219,13 @@ wchar_t Lexer::consumeEscapedCodePoint() {
 }
 
 void Lexer::consumeString() {
-	Token t(STRING, {}, (wchar_t) reader.tellg(), line);
-	while (reader.peek() != EOF) {
+	Token t(STRING, {}, COLUMN, line);
+	while (true) {
         int c = reader.get();
 		switch (c) {
 			case '"':
 			case EOF: tokens.push_back(t); return;
-			case '\n': {
+            case '\n': {
 				reader.unget();
 				tokens.emplace_back(BAD_STRING, t.lexeme);
 				return;
@@ -238,7 +241,7 @@ void Lexer::consumeString() {
 
 wstring Lexer::consumeIdent() {
 	wstring result;
-	while (reader.peek() != EOF) {
+	while (true) {
         wchar_t c = reader.get();
 		if (identCodePoint(c)) {
 			result += c;
@@ -280,7 +283,7 @@ bool Lexer::isIdentSequence() {
 }
 
 void Lexer::consumeHash() {
-	Token t(HASH, {} , (wchar_t) reader.tellg(), line);
+	Token t(HASH, {}, COLUMN, line);
 	if (isIdentSequence()) {
 		t.flags["type"] = L"id";
 	}
@@ -347,7 +350,7 @@ void Lexer::consumeNumericToken() {
 	else {
 		type = NUMBER;
 	}
-	Token t(type, get<0>(number), (wchar_t) reader.tellg(), line);
+	Token t(type, get<0>(number), COLUMN, line);
 	t.flags["type"] = get<1>(number);
 	if (type == DIMENSION) {
 		t.flags["unit"] = consumeIdent();
@@ -360,36 +363,46 @@ void Lexer::consumeIdentLike() {
 	if (reader.peek() == '(') {
 		reader.ignore();
 		if (wstrcompi(s, L"url")) {
-			while (isSpace(reader.peek()) && isSpace(reader.ignore().peek()));
+			skipSpace();
 			if (reader.peek() == '"' || reader.peek() == '\'') {
-				tokens.emplace_back(FUNCTION, s, reader.tellg(), line);
+				tokens.emplace_back(FUNCTION, s, COLUMN, line);
 			}
 			else {
                 consumeUrl();
 			}
 		}
 		else {
-			tokens.emplace_back(FUNCTION, s, reader.tellg(), line);
+			tokens.emplace_back(FUNCTION, s, COLUMN, line);
 		}
 	}
 	else {
-		tokens.emplace_back(IDENT, s, reader.tellg(), line);
+		tokens.emplace_back(IDENT, s, COLUMN, line);
 	}
 }
 
 void Lexer::skipSpace() {
-	while (isSpace(reader.peek())) reader.ignore();
+	while (isSpace(reader.peek())) {
+        if (reader.peek() == '\n') {
+            posOffset = (int) reader.tellg();
+            line++;
+        }
+        reader.ignore();
+    }
 }
 
 void Lexer::consumeUrl() {
-	Token t(URL, {}, (wchar_t) reader.tellg(), line);
+	Token t(URL, {}, COLUMN, line);
     skipSpace();
-	while (reader.peek() != EOF) {
+	while (true) {
 		int c = reader.get();
 		switch (c) {
 			case EOF:
 			case ')': tokens.push_back(t); return;
-			case ' ': case '\n': case '\t':
+            case '\n': {
+                posOffset = (int) reader.tellg();
+                line++;
+            }
+			case ' ': case '\t':
                 skipSpace(); break;
 			case '"':
 			case '\'':
@@ -415,7 +428,7 @@ void Lexer::consumeUrl() {
 }
 
 void Lexer::consumeBadUrl() {
-	while (reader.peek() != EOF) {
+	while (true) {
 		int c = reader.get();
 		switch (c) {
 			case ')': return;
@@ -425,6 +438,7 @@ void Lexer::consumeBadUrl() {
 				}
 				break;
 			}
+            case EOF: return;
             default: break;
 		}
 	}

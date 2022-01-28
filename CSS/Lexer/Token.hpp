@@ -12,12 +12,12 @@ class Token {
 		TokenType type;
 		wstring lexeme;
 		int line;
-		int position;
+		int column;
 		map<string, wstring> flags;
-		explicit Token(TokenType type, const wstring& lexeme = {}, int position = -1, int line = -1)
+		explicit Token(TokenType type, const wstring& lexeme = {}, int column = -1, int line = -1)
 			: type(type),
 			lexeme(lexeme),
-			position(position - lexeme.size()),
+			column(column - (int) lexeme.length()),
 			line(line)
 		{};
 };
