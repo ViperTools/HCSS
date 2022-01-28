@@ -22,3 +22,7 @@ void SyntaxNodeVisitor::Visit(QualifiedRule rule) const {
 void SyntaxNodeVisitor::Visit(SimpleBlock block) const {
     std::cout << "SimpleBlock" << std::endl;
 }
+
+void SyntaxNodeVisitor::Visit(StyleRule rule) const {
+    std::cout << "StyleRule" << std::endl;
+}

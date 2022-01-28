@@ -1,17 +1,8 @@
+#include "../Util/util.hpp"
 #include "Lexer.hpp"
 #include <iostream>
 using std::get;
 using std::to_wstring;
-
-// Helper Functions
-
-bool strcompi(wstring str1, wstring str2) {
-	if (str1.length() == str2.length()) {
-		return std::equal(str2.begin(), str2.end(),
-			str1.begin(), [](wchar_t a, wchar_t b) -> bool { return tolower(a) == tolower(b); });
-	}
-	return false;
-}
 
 bool isHex(wchar_t c) {
 	return isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
@@ -346,6 +337,7 @@ void Lexer::consumeNumericToken() {
 		type = DIMENSION;
 	}
 	else if (reader.peek() == '%') {
+		reader.ignore();
 		type = PERCENTAGE;
 	}
 	else {
@@ -363,7 +355,7 @@ void Lexer::consumeIdentLike() {
 	wstring s = consumeIdent();
 	if (reader.peek() == '(') {
 		reader.ignore();
-		if (strcompi(s, L"url")) {
+		if (wstrcompi(s, L"url")) {
 			while (isSpace(reader.peek()) && isSpace(reader.ignore().peek()));
 			if (reader.peek() == '"' || reader.peek() == '\'') {
 				tokens.emplace_back(FUNCTION, s, reader.tellg(), line);

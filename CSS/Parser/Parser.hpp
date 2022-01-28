@@ -9,28 +9,45 @@
 #include "Grammar/QualifiedRule.hpp"
 #include "Grammar/SimpleBlock.hpp"
 #include "Grammar/Selector.hpp"
-#include "ParserMacros.hpp"
+#include "Grammar/StyleBlock.hpp"
+#include "Grammar/StyleRule.hpp"
+#include "Macros.hpp"
 using std::vector;
 
 #define SKIP idx++
 #define RECONSUME idx--
-#define LAST tokens[idx - 1]
+#define IGNORE_WHITESPACE if (check(WHITESPACE)) idx++
+#define NOT_EOF idx < values.size() && !check(T_EOF)
 
-class StyleSheetParser {
+class ComponentValueParser {
+    public:
+        explicit ComponentValueParser(vector<COMPONENT_VALUE> values)
+            : values(values)
+        {};
+        explicit ComponentValueParser(vector<Token> tokens)
+        {
+            for (Token t : tokens) {
+                values.emplace_back(std::move(t));
+            }
+        };
+    protected:
+        vector<COMPONENT_VALUE> values;
+        int idx = 0;
+        template<typename T = COMPONENT_VALUE> T consume();
+        Token consume(TokenType type, const string& error);
+        template<typename T = COMPONENT_VALUE> T* peek();
+        template<typename T = COMPONENT_VALUE> bool check();
+        bool check(TokenType type);
+        bool check(const wstring& lexeme);
+};
+
+class BaseParser : public ComponentValueParser {
     public:
         vector<SYNTAX_NODE> parse();
-        explicit StyleSheetParser(vector<Token> tokens)
-            : tokens(std::move(tokens))
-        {};
-    private:
-        vector<Token> tokens;
+        using ComponentValueParser::ComponentValueParser;
+    protected:
         vector<SYNTAX_NODE> rules;
-        int idx = 0;
         bool top = true;
-        Token* peek();
-        bool check(TokenType type);
-        Token consume();
-        Token consume(TokenType type, const string& error);
         AtRule consumeAtRule();
         Function consumeFunction();
         QualifiedRule consumeQualifiedRule();
@@ -39,25 +56,11 @@ class StyleSheetParser {
         vector<SYNTAX_NODE> consumeRulesList();
 };
 
-#define IGNORE_WHITESPACE if (checkToken(WHITESPACE)) idx++
-
-class SelectorParser {
+class SelectorParser : public ComponentValueParser {
     public:
-        vector<ComplexSelector> parse();
-        explicit SelectorParser(QualifiedRule rule)
-            : rule(std::move(rule))
-        {};
+        COMPLEX_SELECTOR_LIST parse();
+        using ComponentValueParser::ComponentValueParser;
     private:
-        QualifiedRule rule;
-        int idx = 0;
-        COMPONENT_VALUE* peek();
-        COMPONENT_VALUE consume();
-        Token* peekToken();
-        Token consumeToken();
-        Token consumeToken(TokenType type, const string& error);
-        bool isToken();
-        bool checkToken(TokenType type);
-        bool checkToken(const wstring& lexeme);
         ComplexSelector consumeComplexSelector();
         CompoundSelector consumeCompoundSelector();
         ATTR_MATCHER consumeAttrMatcher();
@@ -72,5 +75,17 @@ class SelectorParser {
         AttributeSelector consumeAttributeSelector();
         RelativeSelector consumeRelativeSelector();
         SIMPLE_SELECTOR consumeSimpleSelector();
-        vector<Token> consumeDeclarationValue(bool any = false);
+        vector<COMPONENT_VALUE> consumeDeclarationValue(bool any = false);
+};
+
+class StyleBlockParser : public BaseParser {
+    public:
+        STYLE_BLOCK parse();
+        using BaseParser::BaseParser;
+};
+
+class DeclarationParser : public BaseParser {
+    public:
+        Declaration parse();
+        using BaseParser::BaseParser;
 };

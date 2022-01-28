@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../ParserMacros.hpp"
+#include "../Macros.hpp"
 #include <utility>
 #include <vector>
 #include <optional>
@@ -82,7 +82,7 @@ class PseudoClassSelector {
     public:
         Token colon;
         Token tok;
-        optional<vector<Token>> anyValue;
+        optional<vector<COMPONENT_VALUE>> anyValue;
         optional<Token> closeParen;
         PseudoClassSelector(Token colon, Token tok, optional<vector<Token>> anyValue = nullopt, optional<Token> closeParen = nullopt)
             : colon(std::move(colon)),

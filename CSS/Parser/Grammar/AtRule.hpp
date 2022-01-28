@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../ParserMacros.hpp"
+#include "../Macros.hpp"
 #include "SimpleBlock.hpp"
 #include <vector>
 #include <optional>
