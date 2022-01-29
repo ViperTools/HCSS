@@ -96,13 +96,13 @@ class PseudoClassSelector {
 [ <type-selector>? <subclass-selector>*
     [ <pseudo-element-selector> <pseudo-class-selector>* ]* ]!
 */
-#define PseudoSelectorPair pair<PSEUDO_ELEMENT_SELECTOR, vector<PseudoClassSelector>>
+#define PSEUDO_SELECTOR_PAIR pair<PSEUDO_ELEMENT_SELECTOR, vector<PseudoClassSelector>>
 class CompoundSelector {
     public:
         optional<TYPE_SELECTOR> typeSelector;
         vector<SUBCLASS_SELECTOR> subclassSelectors;
-        vector<PseudoSelectorPair> pseudoSelectors;
-        explicit CompoundSelector(optional<TYPE_SELECTOR> typeSelector = nullopt, vector<SUBCLASS_SELECTOR> subclassSelectors = {}, const vector<PseudoSelectorPair>& pseudoSelectors = {})
+        vector<PSEUDO_SELECTOR_PAIR> pseudoSelectors;
+        explicit CompoundSelector(optional<TYPE_SELECTOR> typeSelector = nullopt, vector<SUBCLASS_SELECTOR> subclassSelectors = {}, const vector<PSEUDO_SELECTOR_PAIR>& pseudoSelectors = {})
             : typeSelector(std::move(typeSelector)),
             subclassSelectors(std::move(subclassSelectors)),
             pseudoSelectors(pseudoSelectors)

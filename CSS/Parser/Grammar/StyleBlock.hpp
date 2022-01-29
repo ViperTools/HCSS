@@ -18,5 +18,7 @@ class Declaration {
         {};
 };
 
-#define RULE variant<AtRule, QualifiedRule>
-#define STYLE_BLOCK std::vector<std::variant<Declaration, RULE>>
+#define RULE_TYPES AtRule, QualifiedRule
+#define RULE variant<RULE_TYPES>
+#define STYLE_BLOCK_VARIANT std::variant<std::monostate, Declaration, RULE_TYPES>
+#define STYLE_BLOCK std::vector<STYLE_BLOCK_VARIANT>

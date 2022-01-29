@@ -222,6 +222,7 @@ wchar_t Lexer::consumeEscapedCodePoint() {
 void Lexer::consumeString() {
 	Token t(STRING, {}, COLUMN, line);
 	char end = current;
+    t.flags["quote"] = end;
 	while (true) {
         int c = reader.get();
 		switch (c) {
@@ -305,11 +306,11 @@ tuple<wstring, wstring> Lexer::consumeNumber() {
 	wstring repr;
     wchar_t next = reader.peek();
 	if (next == '+' || next == '-') {
-		repr += to_wstring(reader.get());
+		repr += (wchar_t) reader.get();
 		next = reader.peek();
 	}
 	while (isdigit(next)) {
-		repr += to_wstring(reader.get());
+		repr += (wchar_t) reader.get();
 		next = reader.peek();
 	}
 	if (next == '.') {
@@ -317,7 +318,7 @@ tuple<wstring, wstring> Lexer::consumeNumber() {
 			type = L"number";
 			repr += next;
 			while (isdigit(reader.peek())) {
-				repr += to_wstring(reader.get());
+				repr += (wchar_t) reader.get();
 			}
 			next = reader.peek();
 		}
@@ -336,7 +337,7 @@ tuple<wstring, wstring> Lexer::consumeNumber() {
 			repr += suffix;
 			type = L"number";
 			while (isdigit(reader.peek())) {
-				repr += to_wstring(reader.get());
+				repr += (wchar_t) reader.get();
 			}
 		}
 		else {
