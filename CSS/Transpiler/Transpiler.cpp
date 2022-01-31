@@ -7,11 +7,14 @@ using std::pair;
 
 wstring source;
 
+wstring Transpiler::getSource() {
+    return source;
+}
+
 void Transpiler::visit(const std::vector<SYNTAX_NODE>& nodes) const {
     for (SYNTAX_NODE node : nodes) {
         std::visit([this](auto n) { return this->visit(n); }, node);
     }
-    std::cout << string(source.begin(), source.end()) << std::endl;
 }
 
 void Transpiler::visit(AtRule rule) const {

@@ -5,6 +5,7 @@ using std::wstring;
 
 class Transpiler : public SyntaxNodeVisitor {
     public:
+        wstring getSource();
         void visit(const std::vector<SYNTAX_NODE>& nodes) const override;
         void visit(AtRule rule) const override;
         void visit(Function function) const override;

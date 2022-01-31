@@ -41,6 +41,7 @@ class ComponentValueParser {
         template<typename T = COMPONENT_VALUE> bool check();
         bool check(TokenType type);
         bool check(const wstring& lexeme);
+        bool check(const wchar_t& lexeme);
 };
 
 class BaseParser : public ComponentValueParser {

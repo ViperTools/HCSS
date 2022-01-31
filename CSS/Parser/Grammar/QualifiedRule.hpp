@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Macros.hpp"
+#include "SimpleBlock.hpp"
 #include <vector>
 #include <optional>
 

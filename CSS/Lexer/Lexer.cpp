@@ -32,8 +32,7 @@ bool isSpace(wchar_t c) {
 #pragma region Lexer
 
 vector<Token> Lexer::lex() {
-	while (reader.peek() != EOF) {
-		current = reader.get();
+	while ((current = reader.get()) != EOF) {
 		switch (current) {
 			case '(':
                 addToken(LEFT_PAREN); break;
