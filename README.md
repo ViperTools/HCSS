@@ -1,7 +1,7 @@
 <p align="center">
   <img src="/HCSS%20Logo.svg" width="50%">
 </p>
-<p align="center">HCSS is a modified (hopefully improved) version of CSS that provides extra functionality and syntax shortcuts.</p>
+<p align="center">HCSS (Hydra CSS) is a modified (and hopefully improved) version of CSS that provides extra functionality and syntax shortcuts.</p>
 
 # Features
 - [x] Nesting
@@ -12,8 +12,10 @@
 - [ ] Custom media queries
 - [ ] Themes
 
-# TODO
+# Development
+- [x] Lexer
+- [x] Parser
+- [x] Transpiler
+- [x] Switch some grammar elements to structs over pairs to improve readability and extendibility
+- [ ] Add Doxygen comments to improve readability
 - [ ] Optimize as much as possible
-- [ ] Clean up grammar elements to make them more easy to use
-- [ ] Make it easier to extend the parser
-- [ ] Comment everything to make it readable
