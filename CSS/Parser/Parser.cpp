@@ -647,7 +647,14 @@ STYLE_BLOCK StyleBlockParser::parse() {
             }
             case DELIM: {
                 if (t -> lexeme[0] == '&') {
-                    block.emplace_back(consumeQualifiedRule());
+                    SKIP;
+                    QualifiedRule rule = consumeQualifiedRule();
+                    if (rule.block) {
+                        block.emplace_back(StyleRule(SelectorParser(rule.prelude).parse(), StyleBlockParser(rule.block -> value).parse()));
+                    }
+                    else {
+                        block.emplace_back(StyleRule(SelectorParser(rule.prelude).parse()));
+                    }
                 }
                 break;
             }

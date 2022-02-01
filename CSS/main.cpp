@@ -10,7 +10,7 @@ using std::chrono::milliseconds;
 
 int main() {
 
-	Lexer lexer(R"(C:\Users\User\CLionProjects\CSS Parser\CSS\test.hcss)");
+	Lexer lexer(R"(C:\Users\User\HCSS\CSS\test.hcss)");
     std::cout << "[DEBUG] LEXING BEGAN" << std::endl;
     auto t1 = high_resolution_clock::now();
 	vector<Token> tokens = lexer.lex();
@@ -32,7 +32,7 @@ int main() {
     duration<double, std::milli> ms3 = t6 - t5;
     std::cout << "[DEBUG] TRANSPILING COMPLETE: " << ms3.count() << "ms" << std::endl;
     std::cout << "[DEBUG] TOTAL TIME: " << ms.count() + ms2.count() + ms3.count() << "ms" << std::endl;
-    std::wofstream compiled(R"(/workspace/CSS/CSS/test.css)", std::ios::out);
+    std::wofstream compiled(R"(C:\Users\User\HCSS\CSS\test.css)", std::ios::out);
     compiled << transpiler.getSource();
 	return 0;
 }

@@ -91,12 +91,20 @@ wstring Transpiler::stringify(Function& f) const {
     return stringify(f.name) + L'(' + stringify(f.value) + L')';
 }
 
-wstring Transpiler::stringify(StyleRule& rule) const {
-    wstring s = stringify(rule.selectors) + L'{';
+wstring Transpiler::stringify(StyleRule& rule, optional<wstring> nestSel) const {
+    wstring sel = stringify(rule.selectors);
+    if (nestSel) sel = *nestSel + sel;
+    wstring s = sel + L'{';
+    wstring nest;
     for (STYLE_BLOCK_VARIANT val : rule.block) {
-        s += VSTRINGIFY(val);
+        if (auto r = std::get_if<StyleRule>(&val)) {
+            nest += stringify(*r, L":is(" + sel + L") ");
+        }
+        else {
+            s += VSTRINGIFY(val);
+        }
     }
-    return s + L'}';
+    return s + L'}' + nest;
 }
 
 wstring Transpiler::stringify(Declaration &decl) const {

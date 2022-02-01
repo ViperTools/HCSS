@@ -24,7 +24,7 @@ class Transpiler : public SyntaxNodeVisitor {
         wstring stringify(SimpleBlock& block) const;
         wstring stringify(QualifiedRule& rule) const;
         wstring stringify(Function& f) const;
-        wstring stringify(StyleRule& rule) const;
+        wstring stringify(StyleRule& rule, optional<wstring> nestSel = std::nullopt) const;
         wstring stringify(Declaration& decl) const;
         wstring stringify(const PseudoClassSelector& sel) const;
         wstring stringify(AttributeSelector sel) const;
