@@ -16,6 +16,6 @@
 - [x] Lexer
 - [x] Parser
 - [x] Transpiler
-- [ ] Optimize as much as possible
-- [ ] Switch some grammar elements to structs over pairs to improve readability and extendibility
+- [x] Switch some grammar elements to structs over pairs to improve readability and extendibility
 - [ ] Add Doxygen comments to improve readability
+- [ ] Optimize as much as possible
