@@ -14,6 +14,6 @@
 
 # TODO
 - [ ] Optimize as much as possible
-- [ ] Clean up grammar elements to make them more easy to use
+- [ ] Clean up grammar elements to make them more easy to use (use structs)
 - [ ] Make it easier to extend the parser
 - [ ] Comment everything to make it readable
