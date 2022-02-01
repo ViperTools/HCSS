@@ -10,7 +10,7 @@ using std::chrono::milliseconds;
 
 int main() {
 
-	Lexer lexer(R"(/workspace/CSS/CSS/test.hcss)");
+	Lexer lexer(R"(C:\Users\User\CLionProjects\CSS Parser\CSS\test.hcss)");
     std::cout << "[DEBUG] LEXING BEGAN" << std::endl;
     auto t1 = high_resolution_clock::now();
 	vector<Token> tokens = lexer.lex();

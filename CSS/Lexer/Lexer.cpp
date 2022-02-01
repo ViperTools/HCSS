@@ -32,7 +32,8 @@ bool isSpace(wchar_t c) {
 #pragma region Lexer
 
 vector<Token> Lexer::lex() {
-	while ((current = reader.get()) != EOF) {
+	while (reader.peek() != EOF) {
+        current = reader.get();
 		switch (current) {
 			case '(':
                 addToken(LEFT_PAREN); break;
@@ -170,6 +171,7 @@ vector<Token> Lexer::lex() {
 			}
 		}
 	}
+    std::cout << "done" << std::endl;
     tokens.emplace_back(T_EOF);
     return tokens;
 }
@@ -220,7 +222,7 @@ wchar_t Lexer::consumeEscapedCodePoint() {
 
 void Lexer::consumeString() {
 	Token t(STRING, {}, COLUMN, line);
-	char end = current;
+	wchar_t end = current;
     t.flags["quote"] = end;
 	while (true) {
         int c = reader.get();
