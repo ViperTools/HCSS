@@ -12,8 +12,10 @@
 - [ ] Custom media queries
 - [ ] Themes
 
-# TODO
+# Development
+- [x] Lexer
+- [x] Parser
+- [x] Transpiler
 - [ ] Optimize as much as possible
-- [ ] Clean up grammar elements to make them more easy to use (use structs)
-- [ ] Make it easier to extend the parser
-- [ ] Comment everything to make it readable
+- [ ] Switch some grammar elements to structs over pairs to improve readability and extendibility (use structs)
+- [ ] Add Doxygen comments to improve readability
