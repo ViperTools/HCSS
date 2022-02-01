@@ -1,7 +1,7 @@
 <p align="center">
   <img src="/HCSS%20Logo.svg" width="50%">
 </p>
-<p align="center">HCSS is a modified (and hopefully improved) version of CSS that provides extra functionality and syntax shortcuts.</p>
+<p align="center">HCSS (Hydra CSS) is a modified (and hopefully improved) version of CSS that provides extra functionality and syntax shortcuts.</p>
 
 # Features
 - [x] Nesting
