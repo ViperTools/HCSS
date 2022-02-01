@@ -17,7 +17,12 @@ class Transpiler : public SyntaxNodeVisitor {
         wstring stringify(vector<COMPONENT_VALUE> list) const;
         wstring stringify(COMBINATOR comb) const;
         wstring stringify(pair<optional<Token>, Token>& prefix) const;
-        wstring stringify(WQ_NAME ts) const;
+        wstring stringify(PseudoElementSelector sel) const;
+        wstring stringify(ClassSelector sel) const;
+        wstring stringify(TypeSelector sel) const;
+        wstring stringify(AttrMatcher matcher) const;
+        wstring stringify(NsPrefix prefix) const;
+        wstring stringify(WqName ts) const;
         wstring stringify(Token& sel) const;
         wstring stringify(pair<Token, Token>& pair) const;
         wstring stringify(AtRule& rule) const;

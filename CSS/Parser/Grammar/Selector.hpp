@@ -14,13 +14,34 @@ using std::nullopt;
 using std::monostate;
 
 // [ <ident-token> | '*' ]? '|'
-#define NS_PREFIX pair<optional<Token>, Token>
+struct NsPrefix {
+    optional<Token> value;
+    Token bar;
+    NsPrefix(optional<Token> value, Token bar)
+        : value(value),
+        bar(bar)
+    {};
+};
 
 // <ns-prefix>? <ident-token>
-#define WQ_NAME pair<optional<NS_PREFIX>, Token>
+struct WqName {
+    optional<NsPrefix> prefix;
+    Token ident;
+    WqName(optional<NsPrefix> prefix, Token ident)
+        : prefix(prefix),
+        ident(ident)
+    {};
+};
 
 // [ '~' | '|' | '^' | '$' | '*' ]? '='
-#define ATTR_MATCHER pair<optional<Token>, Token>
+struct AttrMatcher {
+    optional<Token> tok;
+    Token eq;
+    AttrMatcher(optional<Token> tok, Token eq)
+        : tok(tok),
+        eq(eq)
+    {};
+};
 
 // i
 #define ATTR_MODIFIER Token
@@ -35,17 +56,17 @@ using std::monostate;
 class AttributeSelector {
     public:
         Token openBracket;
-        WQ_NAME name;
-        optional<ATTR_MATCHER> matcher = nullopt;
+        WqName name;
+        optional<AttrMatcher> matcher = nullopt;
         optional<Token> tok = nullopt;
         optional<Token> modifier = nullopt;
         Token closeBracket;
-        AttributeSelector(Token openBracket, WQ_NAME name, Token closeBracket)
+        AttributeSelector(Token openBracket, WqName name, Token closeBracket)
             : openBracket(std::move(openBracket)),
             name(std::move(name)),
             closeBracket(std::move(closeBracket))
         {};
-        AttributeSelector(Token openBracket, WQ_NAME name, ATTR_MATCHER matcher, Token tok, optional<Token> modifier, Token closeBracket)
+        AttributeSelector(Token openBracket, WqName name, AttrMatcher matcher, Token tok, optional<Token> modifier, Token closeBracket)
             : openBracket(std::move(openBracket)),
             name(std::move(name)),
             matcher(matcher),
@@ -56,29 +77,44 @@ class AttributeSelector {
 };
 
 // <wq-name> | <ns-prefix>? '*'
-#define TYPE_SELECTOR WQ_NAME
+struct TypeSelector {
+    optional<WqName> wqName;
+    optional<NsPrefix> nsPrefix;
+    optional<Token> star;
+    TypeSelector(WqName wqName)
+        : wqName(wqName)
+    {};
+    TypeSelector(optional<NsPrefix> nsPrefix, Token star)
+        : nsPrefix(nsPrefix),
+        star(star)
+    {};
+};
 
 // <hash-token>
 #define ID_SELECTOR Token
 
 // '.' <ident-token>
-#define CLASS_SELECTOR pair<Token, Token>
+struct ClassSelector {
+    Token dot;
+    Token ident;
+    ClassSelector(Token dot, Token ident)
+        : dot(dot),
+        ident(ident)
+    {};
+};
 
 // <id-selector> | <class-selector> | <attribute-selector> | <pseudo-class-selector>
-#define SUBCLASS_SELECTOR variant<monostate, ID_SELECTOR, CLASS_SELECTOR, AttributeSelector, PseudoClassSelector>
+#define SUBCLASS_SELECTOR variant<monostate, ID_SELECTOR, ClassSelector, AttributeSelector, PseudoClassSelector>
 
 // <type-selector> | <subclass-selector>
-#define SIMPLE_SELECTOR variant<TYPE_SELECTOR, SUBCLASS_SELECTOR>
-
-// ':' <pseudo-class-selector>
-#define PSEUDO_ELEMENT_SELECTOR pair<Token, PseudoClassSelector>
+#define SIMPLE_SELECTOR variant<TypeSelector, SUBCLASS_SELECTOR>
 
 /*
 ':' <ident-token> |
     ':' <function-token> <any-value> ')'
 */
 
-class PseudoClassSelector {
+struct PseudoClassSelector {
     public:
         Token colon;
         Token tok;
@@ -92,17 +128,27 @@ class PseudoClassSelector {
         {};
 };
 
+// ':' <pseudo-class-selector>
+struct PseudoElementSelector {
+    Token colon;
+    PseudoClassSelector selector;
+    PseudoElementSelector(Token colon, PseudoClassSelector selector)
+        : colon(colon),
+        selector(selector)
+    {};
+};
+
 /*
 [ <type-selector>? <subclass-selector>*
     [ <pseudo-element-selector> <pseudo-class-selector>* ]* ]!
 */
-#define PSEUDO_SELECTOR_PAIR pair<PSEUDO_ELEMENT_SELECTOR, vector<PseudoClassSelector>>
+#define PSEUDO_SELECTOR_PAIR pair<PseudoElementSelector, vector<PseudoClassSelector>>
 class CompoundSelector {
     public:
-        optional<TYPE_SELECTOR> typeSelector;
+        optional<TypeSelector> typeSelector;
         vector<SUBCLASS_SELECTOR> subclassSelectors;
         vector<PSEUDO_SELECTOR_PAIR> pseudoSelectors;
-        explicit CompoundSelector(optional<TYPE_SELECTOR> typeSelector = nullopt, vector<SUBCLASS_SELECTOR> subclassSelectors = {}, const vector<PSEUDO_SELECTOR_PAIR>& pseudoSelectors = {})
+        explicit CompoundSelector(optional<TypeSelector> typeSelector = nullopt, vector<SUBCLASS_SELECTOR> subclassSelectors = {}, const vector<PSEUDO_SELECTOR_PAIR>& pseudoSelectors = {})
             : typeSelector(std::move(typeSelector)),
             subclassSelectors(std::move(subclassSelectors)),
             pseudoSelectors(pseudoSelectors)

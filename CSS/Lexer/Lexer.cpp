@@ -171,7 +171,6 @@ vector<Token> Lexer::lex() {
 			}
 		}
 	}
-    std::cout << "done" << std::endl;
     tokens.emplace_back(T_EOF);
     return tokens;
 }

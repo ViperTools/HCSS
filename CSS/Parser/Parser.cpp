@@ -18,6 +18,15 @@ using std::chrono::milliseconds;
 #pragma endregion
 
 #pragma region Helpers
+
+/**
+ * @brief Gets the mirror of an opening TokenType
+ * 
+ * @param type The opening TokenType (e.g LEFT_BRACKET)
+ * @return TokenType The closing TokenType (e.g RIGHT_BRACKET) on success
+ * @return Throws an error if an invalid TokenType was specified
+ */
+ 
 TokenType mirror(TokenType type) {
     switch (type) {
         case LEFT_BRACE: return RIGHT_BRACE;
@@ -31,6 +40,14 @@ TokenType mirror(TokenType type) {
 
 #pragma region Component Parser
 
+/**
+ * @brief Consumes the next SyntaxNode of type T
+ * 
+ * @tparam T The more specific type of the SyntaxNode (e.g Token, SimpleBlock, etc.)
+ * @return SyntaxNode of type T on success
+ * @return Throws an error on failure
+ */
+
 template<typename T>
 T ComponentValueParser::consume() {
     if (auto val = peek<T>()) {
@@ -41,6 +58,15 @@ T ComponentValueParser::consume() {
         SYNTAX_ERROR(string("Called consume method with an invalid type. The specified type (") + string(typeid(T).name()).substr(1) + ") does not match the next token's type.", nullopt);
     }
 }
+
+/**
+ * @brief Consumes a token of TokenType 'type' and if the token does not match, throws 'error'
+ * 
+ * @param type The next token's expected type
+ * @param error The error message to throw if the token type is invalid
+ * @return Token The token with TokenType 'type' on success
+ * @return Throws error 'error' on failure
+ */
 
 Token ComponentValueParser::consume(TokenType type, const string& error) {
     auto t = consume<Token>();
@@ -88,6 +114,12 @@ bool ComponentValueParser::check(const wchar_t& lexeme) {
 #pragma endregion
 
 #pragma region Base Parser
+
+/**
+ * @brief Parses a base style sheet
+ * 
+ * @return vector<SYNTAX_NODE> A list of parsed SyntaxNodes
+ */
 
 vector<SYNTAX_NODE> BaseParser::parse() {
     rules = consumeRulesList();
@@ -294,7 +326,7 @@ COMBINATOR SelectorParser::consumeCombinator() {
 }
 
 CompoundSelector SelectorParser::consumeCompoundSelector() {
-    optional<TYPE_SELECTOR> type = nullopt;
+    optional<TypeSelector> type = nullopt;
     if (check(IDENT) || check('*')) {
         type = consumeTypeSelector();
     }
@@ -346,7 +378,7 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
         SKIP;
         if (check(COLON)) {
             RECONSUME;
-            PSEUDO_ELEMENT_SELECTOR el = consumePseudoElementSelector();
+            PseudoElementSelector el = consumePseudoElementSelector();
             vector<PseudoClassSelector> classes;
             while (check(COLON)) {
                 SKIP;
@@ -372,7 +404,7 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
     return CompoundSelector(type, subclasses, pseudos);
 }
 
-ATTR_MATCHER SelectorParser::consumeAttrMatcher() {
+AttrMatcher SelectorParser::consumeAttrMatcher() {
     auto t = consume(DELIM, "Expected delim");
     switch (t.lexeme[0]) {
         case '~':
@@ -380,50 +412,50 @@ ATTR_MATCHER SelectorParser::consumeAttrMatcher() {
         case '^':
         case '$':
         case '*': break;
-        case '=': return ATTR_MATCHER(nullopt, t);
+        case '=': return AttrMatcher(nullopt, t);
         default: {
             SYNTAX_ERROR("Expected ~, |, ^, $, *, or =", t);
         }
     }
     auto eq = consume(DELIM, "Expected =");
     if (eq.lexeme[0] == '=') {
-        return ATTR_MATCHER(t, eq);
+        return AttrMatcher(t, eq);
     }
     SYNTAX_ERROR("Expected =", eq);
 }
 
-NS_PREFIX SelectorParser::consumeNsPrefix() {
+NsPrefix SelectorParser::consumeNsPrefix() {
     auto t = consume<Token>();
     if (t.type == IDENT || (t.type == DELIM && t.lexeme[0] == '*')) {
         Token bar = consume(DELIM, "Expected delim");
         if (bar.lexeme[0] == '|') {
-            return NS_PREFIX(t, bar);
+            return NsPrefix(t, bar);
         }
         SYNTAX_ERROR("Expected |", bar);
     }
     else if (t.type == DELIM && t.lexeme[0] == '|') {
-        return NS_PREFIX(nullopt, t);
+        return NsPrefix(nullopt, t);
     }
     else {
         SYNTAX_ERROR("Expected |", t);
     }
 }
 
-WQ_NAME SelectorParser::consumeWqName() {
+WqName SelectorParser::consumeWqName() {
     auto t = consume<Token>();
     if (t.type == IDENT) {
         if (check('|')) {
             RECONSUME;
-            return WQ_NAME(consumeNsPrefix(), consume(IDENT, "Expected identifier"));
+            return WqName(consumeNsPrefix(), consume(IDENT, "Expected identifier"));
         }
-        return WQ_NAME(nullopt, t);
+        return WqName(nullopt, t);
     }
     else if (t.type == DELIM && t.lexeme[0] == '*') {
         RECONSUME;
-        return WQ_NAME(consumeNsPrefix(), consume(IDENT, "Expected identifier"));
+        return WqName(consumeNsPrefix(), consume(IDENT, "Expected identifier"));
     }
     else {
-        SYNTAX_ERROR("Expected NS_PREFIX or identifier", t);
+        SYNTAX_ERROR("Expected NsPrefix or identifier", t);
     }
 }
 
@@ -435,12 +467,12 @@ AttributeSelector SelectorParser::consumeAttributeSelector() {
     }
     else {
         Token open = consume(LEFT_BRACKET, "Expected [");
-        WQ_NAME name = consumeWqName();
+        WqName name = consumeWqName();
         if (check(RIGHT_BRACKET)) {
             return {open, name, consume<Token>()};
         }
         else {
-            ATTR_MATCHER matcher = consumeAttrMatcher();
+            AttrMatcher matcher = consumeAttrMatcher();
             auto tok = consume<Token>();
             if (tok.type != STRING && tok.type != IDENT) {
                 SYNTAX_ERROR("Expected string or ident", tok);
@@ -454,45 +486,45 @@ AttributeSelector SelectorParser::consumeAttributeSelector() {
     }
 }
 
-TYPE_SELECTOR SelectorParser::consumeTypeSelector() {
+TypeSelector SelectorParser::consumeTypeSelector() {
     auto t = consume<Token>();
     if (t.type == DELIM && t.lexeme[0] == '*') {
         if (check('|')) {
             RECONSUME;
-            NS_PREFIX prefix = consumeNsPrefix();
+            NsPrefix prefix = consumeNsPrefix();
             if (check('*')) {
-                return TYPE_SELECTOR(prefix, consume(DELIM, "Expected delim"));
+                return TypeSelector(prefix, consume(DELIM, "Expected delim"));
             }
             SYNTAX_ERROR("Expected *", peek<Token>());
         }
         else {
-            return TYPE_SELECTOR(nullopt, t);
+            return TypeSelector(nullopt, t);
         }
     }
     else if (t.type == IDENT) {
         if (check('|')) {
             RECONSUME;
-            NS_PREFIX prefix = consumeNsPrefix();
+            NsPrefix prefix = consumeNsPrefix();
             Token next = consume<Token>();
             if (next.type == DELIM && next.lexeme[0] == '*') {
-                return TYPE_SELECTOR(prefix, next);
+                return TypeSelector(prefix, next);
             }
             else if (next.type == IDENT) {
-                return WQ_NAME(prefix, next);
+                return TypeSelector(WqName(prefix, next));
             }
         }
         else {
             RECONSUME;
-            return consumeWqName();
+            return TypeSelector(consumeWqName());
         }
     }
-    SYNTAX_ERROR("Expected WQ_NAME or [NS_PREFIX? '*']", t);
+    SYNTAX_ERROR("Expected WqName or [NsPrefix? '*']", t);
 }
 
-CLASS_SELECTOR SelectorParser::consumeClassSelector() {
+ClassSelector SelectorParser::consumeClassSelector() {
     auto t = consume(DELIM, "Expected .");
     if (t.lexeme[0] == '.') {
-        return CLASS_SELECTOR(t, consume(IDENT, "Expected identifier"));
+        return ClassSelector(t, consume(IDENT, "Expected identifier"));
     }
     SYNTAX_ERROR("Expected .", t);
 }
@@ -594,9 +626,9 @@ PseudoClassSelector SelectorParser::consumePseudoClassSelector() {
     SYNTAX_ERROR("Expected identifier or function", peek<Token>());
 }
 
-PSEUDO_ELEMENT_SELECTOR SelectorParser::consumePseudoElementSelector() {
+PseudoElementSelector SelectorParser::consumePseudoElementSelector() {
     Token colon = consume(COLON, "Expected :");
-    return PSEUDO_ELEMENT_SELECTOR(colon, consumePseudoClassSelector());
+    return PseudoElementSelector(colon, consumePseudoClassSelector());
 }
 
 RelativeSelector SelectorParser::consumeRelativeSelector() {

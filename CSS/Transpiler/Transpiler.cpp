@@ -4,7 +4,6 @@
 #include <variant>
 using std::wstring;
 using std::pair;
-
 wstring source;
 
 wstring Transpiler::getSource() {
@@ -38,7 +37,7 @@ void Transpiler::visit(StyleRule rule) const {
 }
 
 #define VSTRINGIFY(v) (!std::holds_alternative<std::monostate>(v) ? std::visit([this](auto n) -> wstring { return this -> stringify(n); }, v) : L"")
-#define OSTRINGIFY(v) ((v).has_value() ? stringify((v).value()) : L"")
+#define OSTRINGIFY(v) ((v) ? stringify(*(v)) : L"")
 #define OSTRINGIFY_OR(v, d) ((v).has_value() ? stringify((v).value()) : d)
 
 wstring Transpiler::stringify(vector<COMPONENT_VALUE> list) const {
@@ -57,8 +56,33 @@ wstring Transpiler::stringify(pair<optional<Token>, Token>& prefix) const {
     return OSTRINGIFY(prefix.first) + prefix.second.lexeme;
 }
 
-wstring Transpiler::stringify(WQ_NAME ts) const {
-    return OSTRINGIFY(ts.first) + ts.second.lexeme;
+wstring Transpiler::stringify(PseudoElementSelector sel) const {
+    return sel.colon.lexeme + stringify(sel.selector);
+}
+
+wstring Transpiler::stringify(ClassSelector sel) const {
+    return sel.dot.lexeme + sel.ident.lexeme;
+}
+
+wstring Transpiler::stringify(TypeSelector sel) const {
+    if (sel.wqName) {
+        return stringify(*sel.wqName);
+    }
+    else {
+        return OSTRINGIFY(sel.nsPrefix) + sel.star -> lexeme;
+    }
+}
+
+wstring Transpiler::stringify(AttrMatcher matcher) const {
+    return OSTRINGIFY(matcher.tok) + matcher.eq.lexeme;
+}
+
+wstring Transpiler::stringify(NsPrefix prefix) const {
+    return OSTRINGIFY(prefix.value) + prefix.bar.lexeme;
+}
+
+wstring Transpiler::stringify(WqName ts) const {
+    return OSTRINGIFY(ts.prefix) + ts.ident.lexeme;
 }
 
 wstring Transpiler::stringify(Token& t) const {
@@ -72,15 +96,15 @@ wstring Transpiler::stringify(Token& t) const {
 }
 
 wstring Transpiler::stringify(pair<Token, Token>& pair) const {
-    return stringify(pair.first) + stringify(pair.second);
+    return pair.first.lexeme + pair.second.lexeme;
 }
 
 wstring Transpiler::stringify(AtRule& rule) const {
-    return L'@' + stringify(rule.name) + stringify(rule.prelude) + OSTRINGIFY_OR(rule.block, L";");
+    return L'@' + rule.name.lexeme + stringify(rule.prelude) + OSTRINGIFY_OR(rule.block, L";");
 }
 
 wstring Transpiler::stringify(SimpleBlock& block) const {
-    return stringify(block.open) + stringify(block.value) + OSTRINGIFY(block.close);
+    return block.open.lexeme + stringify(block.value) + OSTRINGIFY(block.close);
 }
 
 wstring Transpiler::stringify(QualifiedRule& rule) const {
@@ -88,7 +112,7 @@ wstring Transpiler::stringify(QualifiedRule& rule) const {
 }
 
 wstring Transpiler::stringify(Function& f) const {
-    return stringify(f.name) + L'(' + stringify(f.value) + L')';
+    return f.name.lexeme + L'(' + stringify(f.value) + L')';
 }
 
 wstring Transpiler::stringify(StyleRule& rule, optional<wstring> nestSel) const {
@@ -98,7 +122,7 @@ wstring Transpiler::stringify(StyleRule& rule, optional<wstring> nestSel) const 
     wstring nest;
     for (STYLE_BLOCK_VARIANT val : rule.block) {
         if (auto r = std::get_if<StyleRule>(&val)) {
-            nest += stringify(*r, L":is(" + sel + L") ");
+            nest += stringify(*r, L":is(" + sel + L")");
         }
         else {
             s += VSTRINGIFY(val);
@@ -108,11 +132,11 @@ wstring Transpiler::stringify(StyleRule& rule, optional<wstring> nestSel) const 
 }
 
 wstring Transpiler::stringify(Declaration &decl) const {
-    return stringify(decl.name) + stringify(decl.colon) + stringify(decl.value) + (decl.important ? L" !important" : L"") + L';';
+    return decl.name.lexeme + decl.colon.lexeme + stringify(decl.value) + (decl.important ? L" !important" : L"") + L';';
 }
 
 wstring Transpiler::stringify(const PseudoClassSelector& sel) const {
-    wstring s = stringify(sel.colon) + stringify(sel.tok);
+    wstring s = sel.colon.lexeme + sel.tok.lexeme;
     if (sel.closeParen.has_value()) {
         s += L'(';
     }
@@ -120,7 +144,7 @@ wstring Transpiler::stringify(const PseudoClassSelector& sel) const {
 }
 
 wstring Transpiler::stringify(AttributeSelector sel) const {
-    return stringify(sel.openBracket) + stringify(sel.name) + OSTRINGIFY(sel.matcher) + OSTRINGIFY(sel.tok) + OSTRINGIFY(sel.modifier) + stringify(sel.closeBracket);
+    return sel.openBracket.lexeme + stringify(sel.name) + OSTRINGIFY(sel.matcher) + OSTRINGIFY(sel.tok) + OSTRINGIFY(sel.modifier) + sel.closeBracket.lexeme;
 }
 
 wstring Transpiler::stringify(CompoundSelector sel) const {
@@ -129,7 +153,7 @@ wstring Transpiler::stringify(CompoundSelector sel) const {
         s += VSTRINGIFY(ss);
     }
     for (PSEUDO_SELECTOR_PAIR psp : sel.pseudoSelectors) {
-        s += stringify(psp.first.first) + stringify(psp.first.second);
+        s += stringify(psp.first);
         for (const PseudoClassSelector& pcs : psp.second) {
             s += stringify(pcs);
         }

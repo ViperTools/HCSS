@@ -1,13 +1,1 @@
-.abc def{}
-
-:is(.abc def) ghi {
-    balls:jaws;
-}
-
-:is(:is(.abc def) ghi) jkl .mno {
-    jaws:balls;
-}
-
-:is(.abc def) jkl {
-    jaws:balls;
-}
+div,section{color:white;}:is(div,section):hover{color:red;}:is(div,section)p{color:blue;} 

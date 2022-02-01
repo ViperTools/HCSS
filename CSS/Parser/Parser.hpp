@@ -66,15 +66,15 @@ class SelectorParser : public ComponentValueParser {
     private:
         COMPLEX_SELECTOR consumeComplexSelector();
         CompoundSelector consumeCompoundSelector();
-        ATTR_MATCHER consumeAttrMatcher();
+        AttrMatcher consumeAttrMatcher();
         COMBINATOR consumeCombinator();
-        NS_PREFIX consumeNsPrefix();
-        WQ_NAME consumeWqName();
-        TYPE_SELECTOR consumeTypeSelector();
-        CLASS_SELECTOR consumeClassSelector();
+        NsPrefix consumeNsPrefix();
+        WqName consumeWqName();
+        TypeSelector consumeTypeSelector();
+        ClassSelector consumeClassSelector();
         SUBCLASS_SELECTOR consumeSubclassSelector();
         PseudoClassSelector consumePseudoClassSelector();
-        PSEUDO_ELEMENT_SELECTOR consumePseudoElementSelector();
+        PseudoElementSelector consumePseudoElementSelector();
         AttributeSelector consumeAttributeSelector();
         RelativeSelector consumeRelativeSelector();
         SIMPLE_SELECTOR consumeSimpleSelector();
