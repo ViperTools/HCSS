@@ -12,6 +12,7 @@
 #include "Grammar/Selector.hpp"
 #include "Grammar/StyleBlock.hpp"
 #include "Grammar/StyleRule.hpp"
+#include "Grammar/Variable.hpp"
 #include "Macros.hpp"
 using std::vector;
 
@@ -55,6 +56,8 @@ class BaseParser : public ComponentValueParser {
         Function consumeFunction();
         QualifiedRule consumeQualifiedRule();
         SimpleBlock consumeSimpleBlock();
+        vector<COMPONENT_VALUE> consumeVariableValue();
+        variant<Variable, VariableDeclaration> consumeVariable();
         COMPONENT_VALUE consumeComponentValue();
         vector<SYNTAX_NODE> consumeRulesList();
 };

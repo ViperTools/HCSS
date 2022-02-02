@@ -1,9 +1,19 @@
-div, section {
-	color: white;
+$primary = white
+$secondary = blue
+$font = Arial, sans-serif
+$test = {
+	abc: def;
+}
+
+/* div, section {
+	color: $primary;
+	font: $font;
 	&:hover {
 		color: red;
 	}
 	& p {
-		color: blue;
+		color: $secondary;
 	}
 }
+
+div $test */

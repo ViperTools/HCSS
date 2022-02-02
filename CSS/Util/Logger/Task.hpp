@@ -11,7 +11,7 @@ struct Task {
     std::string name;
     Stopwatch stopwatch;
     std::map<string, double> tasks;
-    CallResult<nullptr_t> call(std::string task, std::function<void()> f);
+    CallResult<std::nullptr_t> call(std::string task, std::function<void()> f);
     template <typename T>
     CallResult<T> call(std::string task, std::function<T()> f);
     string str();
@@ -31,7 +31,7 @@ CallResult<T> Task::call(string task, std::function<T()> f) {
     return { res, task, ms };
 }
 
-CallResult<nullptr_t> Task::call(string task, std::function<void()> f) {
+CallResult<std::nullptr_t> Task::call(string task, std::function<void()> f) {
     stopwatch.start();
     f();
     double ms = stopwatch.lap();
@@ -41,7 +41,7 @@ CallResult<nullptr_t> Task::call(string task, std::function<void()> f) {
 }
 
 string Task::str() {
-    string s = "\n[" + name + "] COMPLETED IN " + std::to_string(stopwatch.elapsed) + "ms";
+    string s = "Task " + name + " completed.\n[" + name + "] COMPLETED IN " + std::to_string(stopwatch.elapsed) + "ms";
     for (auto const& [key, val] : tasks) {
         s += "\n    [" + key + "] COMPLETED IN " + std::to_string(val) + "ms";
     }

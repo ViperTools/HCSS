@@ -53,27 +53,26 @@ struct AttrMatcher {
 '[' <wq-name> ']' |
     [' <wq-name> <attr-matcher> [ <string-token> | <ident-token> ] <attr-modifier>? ']'
 */
-class AttributeSelector {
-    public:
-        Token openBracket;
-        WqName name;
-        optional<AttrMatcher> matcher = nullopt;
-        optional<Token> tok = nullopt;
-        optional<Token> modifier = nullopt;
-        Token closeBracket;
-        AttributeSelector(Token openBracket, WqName name, Token closeBracket)
-            : openBracket(std::move(openBracket)),
-            name(std::move(name)),
-            closeBracket(std::move(closeBracket))
-        {};
-        AttributeSelector(Token openBracket, WqName name, AttrMatcher matcher, Token tok, optional<Token> modifier, Token closeBracket)
-            : openBracket(std::move(openBracket)),
-            name(std::move(name)),
-            matcher(matcher),
-            tok(tok),
-            modifier(std::move(modifier)),
-            closeBracket(std::move(closeBracket))
-        {};
+struct AttributeSelector {
+    Token openBracket;
+    WqName name;
+    optional<AttrMatcher> matcher = nullopt;
+    optional<Token> tok = nullopt;
+    optional<Token> modifier = nullopt;
+    Token closeBracket;
+    AttributeSelector(Token openBracket, WqName name, Token closeBracket)
+        : openBracket(std::move(openBracket)),
+        name(std::move(name)),
+        closeBracket(std::move(closeBracket))
+    {};
+    AttributeSelector(Token openBracket, WqName name, AttrMatcher matcher, Token tok, optional<Token> modifier, Token closeBracket)
+        : openBracket(std::move(openBracket)),
+        name(std::move(name)),
+        matcher(matcher),
+        tok(tok),
+        modifier(std::move(modifier)),
+        closeBracket(std::move(closeBracket))
+    {};
 };
 
 // <wq-name> | <ns-prefix>? '*'
@@ -143,16 +142,15 @@ struct PseudoElementSelector {
     [ <pseudo-element-selector> <pseudo-class-selector>* ]* ]!
 */
 #define PSEUDO_SELECTOR_PAIR pair<PseudoElementSelector, vector<PseudoClassSelector>>
-class CompoundSelector {
-    public:
-        optional<TypeSelector> typeSelector;
-        vector<SUBCLASS_SELECTOR> subclassSelectors;
-        vector<PSEUDO_SELECTOR_PAIR> pseudoSelectors;
-        explicit CompoundSelector(optional<TypeSelector> typeSelector = nullopt, vector<SUBCLASS_SELECTOR> subclassSelectors = {}, const vector<PSEUDO_SELECTOR_PAIR>& pseudoSelectors = {})
-            : typeSelector(std::move(typeSelector)),
-            subclassSelectors(std::move(subclassSelectors)),
-            pseudoSelectors(pseudoSelectors)
-        {};
+struct CompoundSelector {
+    optional<TypeSelector> typeSelector;
+    vector<SUBCLASS_SELECTOR> subclassSelectors;
+    vector<PSEUDO_SELECTOR_PAIR> pseudoSelectors;
+    explicit CompoundSelector(optional<TypeSelector> typeSelector = nullopt, vector<SUBCLASS_SELECTOR> subclassSelectors = {}, const vector<PSEUDO_SELECTOR_PAIR>& pseudoSelectors = {})
+        : typeSelector(std::move(typeSelector)),
+        subclassSelectors(std::move(subclassSelectors)),
+        pseudoSelectors(pseudoSelectors)
+    {};
 };
 
 // <compound-selector> [ <combinator>? <compound-selector> ]*
@@ -160,14 +158,13 @@ class CompoundSelector {
 #define COMPLEX_SELECTOR vector<COMPLEX_SELECTOR_PAIR>
 
 // <combinator>? <complex-selector>
-class RelativeSelector {
-    public:
-        COMBINATOR combinator;
-        COMPLEX_SELECTOR selector;
-        RelativeSelector(COMBINATOR combinator, COMPLEX_SELECTOR selector)
-            : selector(std::move(selector)),
-            combinator(std::move(combinator))
-        {};
+struct RelativeSelector {
+    COMBINATOR combinator;
+    COMPLEX_SELECTOR selector;
+    RelativeSelector(COMBINATOR combinator, COMPLEX_SELECTOR selector)
+        : selector(std::move(selector)),
+        combinator(std::move(combinator))
+    {};
 };
 
 #define SELECTOR_LIST vector<COMPLEX_SELECTOR>

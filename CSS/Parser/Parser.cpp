@@ -1,5 +1,6 @@
 // Eliminate as many check calls as possible for performance
 
+#include "Macros.hpp"
 #pragma region includes
 
 #include "../Util/util.hpp"
@@ -153,6 +154,18 @@ vector<SYNTAX_NODE> BaseParser::consumeRulesList() {
                 list.emplace_back(consumeAtRule());
                 break;
             }
+            case DELIM: {
+                if (t -> lexeme[0] == '$') {
+                    auto var = consumeVariable();
+                    if (auto v = std::get_if<Variable>(&var)) {
+                        list.emplace_back(*v);
+                    }
+                    else {
+                        list.emplace_back(std::get<VariableDeclaration>(var));
+                    }
+                    break;
+                }
+            }
             default: {
                 list.emplace_back(consumeQualifiedRule());
                 break;
@@ -170,6 +183,18 @@ COMPONENT_VALUE BaseParser::consumeComponentValue() {
             }
             case FUNCTION: {
                 return consumeFunction();
+            }
+            case DELIM: {
+                if (t -> lexeme[0] == '$') {
+                    auto var = consumeVariable();
+                    if (auto v = std::get_if<Variable>(&var)) {
+                        return *v;
+                    }
+                    else {
+                        return std::get<VariableDeclaration>(var);
+                    }
+                    break;
+                }
             }
             default: {
                 SKIP;
@@ -238,6 +263,11 @@ QualifiedRule BaseParser::consumeQualifiedRule() {
                     rule.block = consumeSimpleBlock();
                     return rule;
                 }
+                case DELIM: {
+                    if (t -> lexeme[0] == '$') {
+                        return rule;
+                    }
+                }
                 default: {
                     rule.prelude.emplace_back(consumeComponentValue());
                 }
@@ -273,6 +303,42 @@ SimpleBlock BaseParser::consumeSimpleBlock() {
         }
     }
     return block;
+}
+
+vector<COMPONENT_VALUE> BaseParser::consumeVariableValue() {
+    IGNORE_WHITESPACE;
+    vector<COMPONENT_VALUE> val;
+    while (idx < values.size()) {
+        if (auto t = peek<Token>()) {
+            if ((t -> type == WHITESPACE && t -> lexeme.find('\n') != string::npos) || t -> type == SEMICOLON) {
+                SKIP;
+                break;
+            }
+        }
+        COMPONENT_VALUE val = consumeComponentValue();
+        if (auto block = std::get_if<SimpleBlock>(&val)) {
+            if (std::holds_alternative<QualifiedRule>(values.back())) {
+                values.pop_back();
+                // TODO
+            }
+        }
+        val.emplace_back(val);
+    }
+    return val;
+}
+
+variant<Variable, VariableDeclaration> BaseParser::consumeVariable() {
+    Token dollar = consume(DELIM, "Expected delim");
+    if (dollar.lexeme[0] != '$') SYNTAX_ERROR("Expected $", dollar);
+    Variable var(dollar, consume(IDENT, "Expected identifier"));
+    IGNORE_WHITESPACE;
+    if (check('=')) {
+        auto eq = consume<Token>();
+        return VariableDeclaration(var, eq, consumeVariableValue());
+    }
+    else {
+        return var;
+    }
 }
 
 #pragma endregion

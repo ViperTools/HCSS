@@ -4,11 +4,6 @@
 #include <variant>
 using std::wstring;
 using std::pair;
-wstring source;
-
-wstring Transpiler::getSource() {
-    return source;
-}
 
 void Transpiler::visit(const std::vector<SYNTAX_NODE>& nodes) const {
     for (SYNTAX_NODE node : nodes) {
@@ -34,6 +29,14 @@ void Transpiler::visit(SimpleBlock block) const {
 
 void Transpiler::visit(StyleRule rule) const {
     source += stringify(rule) + L' ';
+}
+
+void Transpiler::visit(Variable var) const {
+    source += stringify(var) + L' ';
+}
+
+void Transpiler::visit(VariableDeclaration decl) const {
+    variables[decl.variable.name.lexeme] = stringify(decl.value);
 }
 
 #define VSTRINGIFY(v) (!std::holds_alternative<std::monostate>(v) ? std::visit([this](auto n) -> wstring { return this -> stringify(n); }, v) : L"")
@@ -118,7 +121,7 @@ wstring Transpiler::stringify(Function& f) const {
 wstring Transpiler::stringify(StyleRule& rule, optional<wstring> nestSel) const {
     wstring sel = stringify(rule.selectors);
     if (nestSel) sel = *nestSel + sel;
-    wstring s = sel + L'{';
+    wstring s = sel + (rule.block.size() > 0 ? L"{" : L"");
     wstring nest;
     for (STYLE_BLOCK_VARIANT val : rule.block) {
         if (auto r = std::get_if<StyleRule>(&val)) {
@@ -128,7 +131,7 @@ wstring Transpiler::stringify(StyleRule& rule, optional<wstring> nestSel) const 
             s += VSTRINGIFY(val);
         }
     }
-    return s + L'}' + nest;
+    return s + (rule.block.size() > 0 ? L"}" : L"") + nest;
 }
 
 wstring Transpiler::stringify(Declaration &decl) const {
@@ -173,4 +176,15 @@ wstring Transpiler::stringify(COMPLEX_SELECTOR_LIST list) const {
         if (i < list.size() - 1) s += L',';
     }
     return s;
+}
+
+wstring Transpiler::stringify(Variable var) const {
+    if (variables.contains(var.name.lexeme)) {
+        return variables[var.name.lexeme];
+    }
+    return L"";
+}
+
+wstring Transpiler::stringify(VariableDeclaration decl) const {
+    return L"";
 }

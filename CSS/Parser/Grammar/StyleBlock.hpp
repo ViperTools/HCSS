@@ -6,18 +6,17 @@
 #include <variant>
 class StyleRule;
 
-class Declaration {
-    public:
-        Token name;
-        Token colon;
-        std::vector<COMPONENT_VALUE> value;
-        bool important;
-        Declaration(Token name, Token colon, std::vector<COMPONENT_VALUE> value = {}, bool important = false)
-            : name(std::move(name)),
-            colon(std::move(colon)),
-            value(std::move(value)),
-            important(important)
-        {};
+struct Declaration {
+    Token name;
+    Token colon;
+    std::vector<COMPONENT_VALUE> value;
+    bool important;
+    Declaration(Token name, Token colon, std::vector<COMPONENT_VALUE> value = {}, bool important = false)
+        : name(std::move(name)),
+        colon(std::move(colon)),
+        value(std::move(value)),
+        important(important)
+    {};
 };
 
 #define RULE_TYPES AtRule, QualifiedRule
