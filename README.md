@@ -85,7 +85,7 @@ HCSS allows you to define your own media queries and use them later. Like variab
 ```
 
 ## Events
-HCSS adds events to elements using the pseudo selector syntax. They are pretty useless on their own, but when used in combination with the [toggle operator](https://github.com/ViperTools/HCSS/edit/main/README.md#toggle-operator), events are extremely powerful.
+HCSS adds events to elements using the pseudo selector syntax. They are pretty useless on their own, but when used in combination with the [toggle operator](#toggle-operator), events are extremely powerful.
 ### HCSS
 ```css
 button:click {
@@ -164,7 +164,7 @@ document.querySelectorAll('button').forEach(e => {
 ```
 
 ## Themes
-Themes allow you to easily implement custom themes without writing any JavaScript. Themes can be created using `@theme`. The `theme` property can also be used with the [toggle operator](https://github.com/ViperTools/HCSS/edit/main/README.md#toggle-operator) to toggle the theme with an event. There is also a `global-theme` property that will apply the theme to the body element.
+Themes allow you to easily implement custom themes without writing any JavaScript. Themes can be created using `@theme`. The `theme` property can also be used with the [toggle operator](#toggle-operator) to toggle the theme with an event. There is also a `global-theme` property that will apply the theme to the body element.
 ### HCSS
 ```css
 @theme dark {
