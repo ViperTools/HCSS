@@ -2,25 +2,19 @@
 #include "Parser/Macros.hpp"
 #include "Parser/Parser.hpp"
 #include "Transpiler/Transpiler.hpp"
-#include "Util/Logger/logger.hpp"
+#include "Util/Logger/Task.hpp"
 #include <iostream>
 #include <string>
 
 int main() {
-	Lexer lexer(R"(/workspace/HCSS/CSS/test.hcss)");    
-	auto lexResult = Logger::call<vector<Token>>(std::bind(&Lexer::lex, &lexer));
-    lexResult.output("LEXING");
-
-    BaseParser parser(lexResult.result);
-    auto parseResult = Logger::call<vector<SYNTAX_NODE>>(std::bind(&BaseParser::parse, &parser));
-    parseResult.output("PARSING");
-
+    Task task("PARSER");
+	auto lexResult = task.call<vector<Token>>("LEXING", [] () -> auto { return Lexer(R"(C:\Users\User\HCSS\CSS\test.hcss)").lex(); });
+    auto parseResult = task.call<vector<SYNTAX_NODE>>("PARSING", [=] () -> auto { return BaseParser(lexResult.result).parse(); });
     Transpiler transpiler;
-    auto transpile = std::bind(static_cast<void (Transpiler::*)(const vector<SYNTAX_NODE>& p) const> (&Transpiler::visit), &transpiler, parseResult.result);
-    Logger::call("TRANSPILING", transpile);
-    
-    std::wofstream compiled(R"(/workspace/HCSS/CSS/test.css)", std::ios::out);
+    task.call("TRANSPILING", [=] { transpiler.visit(parseResult.result); });
+    task.log();
+
+    std::wofstream compiled(R"(C:\Users\User\HCSS\CSS\test.css)", std::ios::out);
     compiled << transpiler.getSource();
-    Logger::lap();
 	return 0;
 }
