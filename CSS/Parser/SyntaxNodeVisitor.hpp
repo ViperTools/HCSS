@@ -5,8 +5,8 @@
 #include "Grammar/QualifiedRule.hpp"
 #include "Grammar/SimpleBlock.hpp"
 #include "Grammar/StyleRule.hpp"
-#include "Grammar/Variable.hpp"
 #include <vector>
+#include <deque>
 
 class SyntaxNodeVisitor {
     public:
@@ -16,6 +16,4 @@ class SyntaxNodeVisitor {
         virtual void visit(QualifiedRule rule) const = 0;
         virtual void visit(SimpleBlock block) const = 0;
         virtual void visit(StyleRule rule) const = 0;
-        virtual void visit(Variable var) const = 0;
-        virtual void visit(VariableDeclaration decl) const = 0;
 };

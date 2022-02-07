@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 #include <variant>
+#include <deque>
 #include "Grammar/AtRule.hpp"
 #include "Grammar/Function.hpp"
 #include "Grammar/QualifiedRule.hpp"
@@ -12,37 +13,35 @@
 #include "Grammar/Selector.hpp"
 #include "Grammar/StyleBlock.hpp"
 #include "Grammar/StyleRule.hpp"
-#include "Grammar/Variable.hpp"
 #include "Macros.hpp"
 using std::vector;
+using std::deque;
 
 #define SYNTAX_ERROR(s, t) throw SyntaxError(s, t, __LINE__, __FILE__)
-#define SKIP idx++
-#define RECONSUME idx--
-#define IGNORE_WHITESPACE if (check(WHITESPACE)) idx++
-#define NOT_EOF (idx < values.size() && !check(T_EOF))
+#define IGNORE_WHITESPACE if (check(WHITESPACE)) values.pop_front();
 
 class ComponentValueParser {
     public:
-        explicit ComponentValueParser(vector<COMPONENT_VALUE> values)
-            : values(values)
-        {};
-        explicit ComponentValueParser(vector<Token> tokens)
+        explicit ComponentValueParser(vector<COMPONENT_VALUE> vec)
         {
-            for (Token t : tokens) {
-                values.emplace_back(std::move(t));
-            }
+            std::move(vec.begin(), vec.end(), std::back_inserter(values));
+        };
+        explicit ComponentValueParser(deque<COMPONENT_VALUE> values)
+            : values(std::move(values))
+        {};
+        explicit ComponentValueParser(const vector<Token>& tokens)
+        {
+            std::move(tokens.begin(), tokens.end(), std::back_inserter(values));
         };
     protected:
-        vector<COMPONENT_VALUE> values;
-        int idx = 0;
+        deque<COMPONENT_VALUE> values;
         template<typename T = COMPONENT_VALUE> T consume();
         Token consume(TokenType type, const string& error);
-        template<typename T = COMPONENT_VALUE> optional<T> peek();
+        template<typename T = COMPONENT_VALUE> optional<T> peek(int idx = 0);
         template<typename T = COMPONENT_VALUE> bool check();
-        bool check(TokenType type);
-        bool check(const wstring& lexeme);
-        bool check(const wchar_t& lexeme);
+        bool check(TokenType type, int idx = 0);
+        bool check(const wstring& lexeme, int idx = 0);
+        bool check(const wchar_t& lexeme, int idx = 0);
 };
 
 class BaseParser : public ComponentValueParser {
@@ -56,8 +55,6 @@ class BaseParser : public ComponentValueParser {
         Function consumeFunction();
         QualifiedRule consumeQualifiedRule();
         SimpleBlock consumeSimpleBlock();
-        vector<COMPONENT_VALUE> consumeVariableValue();
-        variant<Variable, VariableDeclaration> consumeVariable();
         COMPONENT_VALUE consumeComponentValue();
         vector<SYNTAX_NODE> consumeRulesList();
 };

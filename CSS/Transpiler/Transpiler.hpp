@@ -13,11 +13,8 @@ class Transpiler : public SyntaxNodeVisitor {
         void visit(QualifiedRule rule) const override;
         void visit(SimpleBlock block) const override;
         void visit(StyleRule rule) const override;
-        void visit(Variable var) const override;
-        void visit(VariableDeclaration decl) const override;
         void visit(std::monostate) const {};
     private:
-        mutable std::map<wstring, wstring> variables;
         wstring stringify(vector<COMPONENT_VALUE> list) const;
         wstring stringify(COMBINATOR comb) const;
         wstring stringify(pair<optional<Token>, Token>& prefix) const;
@@ -39,6 +36,4 @@ class Transpiler : public SyntaxNodeVisitor {
         wstring stringify(AttributeSelector sel) const;
         wstring stringify(CompoundSelector sel) const;
         wstring stringify(COMPLEX_SELECTOR_LIST list) const;
-        wstring stringify(Variable var) const;
-        wstring stringify(VariableDeclaration decl) const;
 };

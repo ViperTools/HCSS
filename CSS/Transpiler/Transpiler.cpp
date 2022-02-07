@@ -31,17 +31,9 @@ void Transpiler::visit(StyleRule rule) const {
     source += stringify(rule) + L' ';
 }
 
-void Transpiler::visit(Variable var) const {
-    source += stringify(var) + L' ';
-}
-
-void Transpiler::visit(VariableDeclaration decl) const {
-    variables[decl.variable.name.lexeme] = stringify(decl.value);
-}
-
 #define VSTRINGIFY(v) (!std::holds_alternative<std::monostate>(v) ? std::visit([this](auto n) -> wstring { return this -> stringify(n); }, v) : L"")
 #define OSTRINGIFY(v) ((v) ? stringify(*(v)) : L"")
-#define OSTRINGIFY_OR(v, d) ((v).has_value() ? stringify((v).value()) : d)
+#define OSTRINGIFY_OR(v, d) ((v).has_value() ? stringify((v).value()) : (d))
 
 wstring Transpiler::stringify(vector<COMPONENT_VALUE> list) const {
     wstring s;
@@ -176,15 +168,4 @@ wstring Transpiler::stringify(COMPLEX_SELECTOR_LIST list) const {
         if (i < list.size() - 1) s += L',';
     }
     return s;
-}
-
-wstring Transpiler::stringify(Variable var) const {
-    if (variables.contains(var.name.lexeme)) {
-        return variables[var.name.lexeme];
-    }
-    return L"";
-}
-
-wstring Transpiler::stringify(VariableDeclaration decl) const {
-    return L"";
 }

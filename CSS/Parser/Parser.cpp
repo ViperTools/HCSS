@@ -1,17 +1,17 @@
-// Eliminate as many check calls as possible for performance
+#pragma ide diagnostic ignored "OCUnusedGlobalDeclarationInspection"
+#pragma ide diagnostic ignored "misc-no-recursion"
 
-#include "Macros.hpp"
 #pragma region includes
-
+#include "Macros.hpp"
 #include "../Util/util.hpp"
 #include "Grammar/Selector.hpp"
 #include "Parser.hpp"
 #include <deque>
-#include <cctype>
 #include <utility>
-#include <iostream>
 
 #include <chrono>
+#include <iostream>
+
 using std::chrono::high_resolution_clock;
 using std::chrono::duration;
 using std::chrono::milliseconds;
@@ -41,6 +41,13 @@ TokenType mirror(TokenType type) {
 
 #pragma region Component Parser
 
+template<>
+COMPONENT_VALUE ComponentValueParser::consume() {
+    auto temp = values.front();
+    values.pop_front();
+    return temp;
+}
+
 /**
  * @brief Consumes the next SyntaxNode of type T
  * 
@@ -51,9 +58,10 @@ TokenType mirror(TokenType type) {
 
 template<typename T>
 T ComponentValueParser::consume() {
-    if (auto val = peek<T>()) {
-        idx++;
-        return *val;
+    if (auto val = std::get_if<T>(&values.front())) {
+        auto temp = std::move(*val);
+        values.pop_front();
+        return temp;
     }
     else {
         SYNTAX_ERROR(string("Called consume method with an invalid type. The specified type (") + string(typeid(T).name()).substr(1) + ") does not match the next token's type.", nullopt);
@@ -78,16 +86,15 @@ Token ComponentValueParser::consume(TokenType type, const string& error) {
 }
 
 template<>
-optional<COMPONENT_VALUE> ComponentValueParser::peek() {
-    return idx >= 0 && idx < values.size() ? optional<COMPONENT_VALUE>(values[idx]) : nullopt;
+optional<COMPONENT_VALUE> ComponentValueParser::peek(int idx) {
+    return !values.empty() && idx < values.size() ? optional<COMPONENT_VALUE>(values[idx]) : nullopt;
 }
 
 template<typename T>
-optional<T> ComponentValueParser::peek() {
-    if (idx >= 0 && idx < values.size()) {
-        if (const T* val = std::get_if<T>(&values[idx])) {
-            return *val;
-        }
+optional<T> ComponentValueParser::peek(int idx) {
+    if (values.empty() || idx > values.size()) return nullopt;
+    if (const T* val = std::get_if<T>(&values[idx])) {
+        return *val;
     }
     return nullopt;
 }
@@ -97,18 +104,18 @@ bool ComponentValueParser::check() {
     return peek<T>().has_value();
 }
 
-bool ComponentValueParser::check(TokenType type) {
-    auto t = peek<Token>();
+bool ComponentValueParser::check(TokenType type, int idx) {
+    auto t = peek<Token>(idx);
     return t.has_value() && t -> type == type;
 }
 
-bool ComponentValueParser::check(const wstring& lexeme) {
-    auto t = peek<Token>();
+bool ComponentValueParser::check(const wstring& lexeme, int idx) {
+    auto t = peek<Token>(idx);
     return t.has_value() && t -> lexeme == lexeme;
 }
 
-bool ComponentValueParser::check(const wchar_t& lexeme) {
-    auto t = peek<Token>();
+bool ComponentValueParser::check(const wchar_t& lexeme, int idx) {
+    auto t = peek<Token>(idx);
     return t.has_value() && t -> type == DELIM && t -> lexeme[0] == lexeme;
 }
 
@@ -142,7 +149,7 @@ vector<SYNTAX_NODE> BaseParser::consumeRulesList() {
     vector<SYNTAX_NODE> list;
     while (auto t = peek<Token>()) {
         switch (t -> type) {
-            case WHITESPACE: SKIP; break;
+            case WHITESPACE: values.pop_front(); break;
             case T_EOF: return list;
             case CDO: case CDC: {
                 if (!top) {
@@ -153,18 +160,6 @@ vector<SYNTAX_NODE> BaseParser::consumeRulesList() {
             case AT_KEYWORD: {
                 list.emplace_back(consumeAtRule());
                 break;
-            }
-            case DELIM: {
-                if (t -> lexeme[0] == '$') {
-                    auto var = consumeVariable();
-                    if (auto v = std::get_if<Variable>(&var)) {
-                        list.emplace_back(*v);
-                    }
-                    else {
-                        list.emplace_back(std::get<VariableDeclaration>(var));
-                    }
-                    break;
-                }
             }
             default: {
                 list.emplace_back(consumeQualifiedRule());
@@ -184,34 +179,23 @@ COMPONENT_VALUE BaseParser::consumeComponentValue() {
             case FUNCTION: {
                 return consumeFunction();
             }
-            case DELIM: {
-                if (t -> lexeme[0] == '$') {
-                    auto var = consumeVariable();
-                    if (auto v = std::get_if<Variable>(&var)) {
-                        return *v;
-                    }
-                    else {
-                        return std::get<VariableDeclaration>(var);
-                    }
-                    break;
-                }
-            }
             default: {
-                SKIP;
-                return *t;
+                auto temp = std::move(*t);
+                values.pop_front();
+                return temp;
             }
         }
     }
-    return consume<COMPONENT_VALUE>();
+    return consume();
 }
 
 AtRule BaseParser::consumeAtRule() {
     Token at = consume(AT_KEYWORD, "Expected AT_KEYWORD");
     AtRule rule(at);
-    while (idx < values.size()) {
+    while (!values.empty()) {
         if (auto t = peek<Token>()) {
             switch (t -> type) {
-                case T_EOF: case SEMICOLON: SKIP; return rule;
+                case T_EOF: case SEMICOLON: values.pop_front(); return rule;
                 case LEFT_BRACE: {
                     rule.block = consumeSimpleBlock();
                     return rule;
@@ -224,8 +208,8 @@ AtRule BaseParser::consumeAtRule() {
         else {
             auto block = peek<SimpleBlock>();
             if (block.has_value() && block -> open.type == LEFT_BRACE) {
-                SKIP;
                 rule.block = *block;
+                values.pop_front();
                 return rule;
             }
             else {
@@ -241,7 +225,7 @@ Function BaseParser::consumeFunction() {
     while (auto t = peek<Token>()) {
         switch (t -> type) {
             case T_EOF: case RIGHT_PAREN: {
-                SKIP;
+                values.pop_front();
                 return f;
             }
             default: {
@@ -255,7 +239,7 @@ Function BaseParser::consumeFunction() {
 
 QualifiedRule BaseParser::consumeQualifiedRule() {
     QualifiedRule rule;
-    while (idx < values.size()) {
+    while (!values.empty()) {
         if (auto t = peek<Token>()) {
             switch (t -> type) {
                 case T_EOF: SYNTAX_ERROR("Qualified rule was not closed. Reached end of file.", nullopt);
@@ -276,8 +260,8 @@ QualifiedRule BaseParser::consumeQualifiedRule() {
         else {
             auto block = peek<SimpleBlock>();
             if (block.has_value() && block -> open.type == LEFT_BRACE) {
-                SKIP;
                 rule.block = *block;
+                values.pop_front();
                 return rule;
             }
             rule.prelude.emplace_back(consumeComponentValue());
@@ -291,8 +275,8 @@ SimpleBlock BaseParser::consumeSimpleBlock() {
     TokenType m = mirror(block.open.type);
     while (auto t = peek<Token>()) {
         if (t -> type == m) {
-            SKIP;
             block.close = *t;
+            values.pop_front();
             return block;
         }
         else if (t -> type == T_EOF) {
@@ -305,42 +289,6 @@ SimpleBlock BaseParser::consumeSimpleBlock() {
     return block;
 }
 
-vector<COMPONENT_VALUE> BaseParser::consumeVariableValue() {
-    IGNORE_WHITESPACE;
-    vector<COMPONENT_VALUE> val;
-    while (idx < values.size()) {
-        if (auto t = peek<Token>()) {
-            if ((t -> type == WHITESPACE && t -> lexeme.find('\n') != string::npos) || t -> type == SEMICOLON) {
-                SKIP;
-                break;
-            }
-        }
-        COMPONENT_VALUE val = consumeComponentValue();
-        if (auto block = std::get_if<SimpleBlock>(&val)) {
-            if (std::holds_alternative<QualifiedRule>(values.back())) {
-                values.pop_back();
-                // TODO
-            }
-        }
-        val.emplace_back(val);
-    }
-    return val;
-}
-
-variant<Variable, VariableDeclaration> BaseParser::consumeVariable() {
-    Token dollar = consume(DELIM, "Expected delim");
-    if (dollar.lexeme[0] != '$') SYNTAX_ERROR("Expected $", dollar);
-    Variable var(dollar, consume(IDENT, "Expected identifier"));
-    IGNORE_WHITESPACE;
-    if (check('=')) {
-        auto eq = consume<Token>();
-        return VariableDeclaration(var, eq, consumeVariableValue());
-    }
-    else {
-        return var;
-    }
-}
-
 #pragma endregion
 
 #pragma region Selector Parser
@@ -348,10 +296,10 @@ variant<Variable, VariableDeclaration> BaseParser::consumeVariable() {
 COMPLEX_SELECTOR_LIST SelectorParser::parse() {
     IGNORE_WHITESPACE;
     COMPLEX_SELECTOR_LIST list;
-    while (idx < values.size()) {
+    while (!values.empty()) {
         list.emplace_back(consumeComplexSelector());
         if (check(COMMA)) {
-            SKIP;
+            values.pop_front();
             IGNORE_WHITESPACE;
         }
     }
@@ -362,7 +310,7 @@ COMPLEX_SELECTOR SelectorParser::consumeComplexSelector() {
     IGNORE_WHITESPACE;
     COMPLEX_SELECTOR selectors = { COMPLEX_SELECTOR_PAIR({ }, consumeCompoundSelector()) };
     IGNORE_WHITESPACE;
-    while (NOT_EOF && !check(COMMA)) {
+    while (!values.empty() && !check(T_EOF) && !check(COMMA)) {
         COMBINATOR comb = consumeCombinator();
         IGNORE_WHITESPACE;
         selectors.emplace_back(comb, consumeCompoundSelector());
@@ -372,20 +320,25 @@ COMPLEX_SELECTOR SelectorParser::consumeComplexSelector() {
 }
 
 COMBINATOR SelectorParser::consumeCombinator() {
-    auto tok = consume<Token>();
-    switch (tok.lexeme[0]) {
+    auto tok = peek<Token>();
+    switch (tok -> lexeme[0]) {
         case '>':
         case '+':
-        case '~': return tok;
+        case '~': {
+            auto temp = std::move(*tok);
+            values.pop_front();
+            return temp;
+        }
         case '|': {
+            auto t1 = *tok;
+            values.pop_front();
             Token t2 = consume(DELIM, "Expected DELIM");
             if (t2.lexeme[0] != '|') {
                 SYNTAX_ERROR("Expected second |", t2);
             }
-            return pair<Token, Token>(tok, t2);
+            return pair<Token, Token>(t1, t2);
         }
         default: {
-            RECONSUME;
             return { };
         }
     }
@@ -398,10 +351,10 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
     }
     vector<SUBCLASS_SELECTOR> subclasses;
     bool consuming = true;
-    while (consuming && idx < values.size()) {
+    while (consuming && !values.empty()) {
         if (auto t = peek<Token>()) {
             switch (t -> type) {
-                case T_EOF: SKIP; break;
+                case T_EOF: values.pop_front(); break;
                 case DELIM: {
                     if (t -> lexeme[0] != '.') {
                         consuming = false;
@@ -411,9 +364,7 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
                     break;
                 }
                 case COLON: {
-                    SKIP;
-                    bool isColon = check(COLON);
-                    RECONSUME;
+                    bool isColon = check(COLON, 1);
                     if (isColon) {
                         consuming = false;
                         break;
@@ -441,26 +392,20 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
     }
     vector<PSEUDO_SELECTOR_PAIR> pseudos;
     while (check(COLON)) {
-        SKIP;
-        if (check(COLON)) {
-            RECONSUME;
+        if (check(COLON, 1)) {
             PseudoElementSelector el = consumePseudoElementSelector();
             vector<PseudoClassSelector> classes;
             while (check(COLON)) {
-                SKIP;
-                if (!check(COLON)) {
-                    RECONSUME;
+                if (!check(COLON, 1)) {
                     classes.emplace_back(consumePseudoClassSelector());
                 }
                 else {
-                    RECONSUME;
                     break;
                 }
             }
             pseudos.emplace_back(el, classes);
         }
         else {
-            RECONSUME;
             break;
         }
     }
@@ -478,14 +423,14 @@ AttrMatcher SelectorParser::consumeAttrMatcher() {
         case '^':
         case '$':
         case '*': break;
-        case '=': return AttrMatcher(nullopt, t);
+        case '=': return { nullopt, t };
         default: {
             SYNTAX_ERROR("Expected ~, |, ^, $, *, or =", t);
         }
     }
     auto eq = consume(DELIM, "Expected =");
     if (eq.lexeme[0] == '=') {
-        return AttrMatcher(t, eq);
+        return { t, eq };
     }
     SYNTAX_ERROR("Expected =", eq);
 }
@@ -495,12 +440,12 @@ NsPrefix SelectorParser::consumeNsPrefix() {
     if (t.type == IDENT || (t.type == DELIM && t.lexeme[0] == '*')) {
         Token bar = consume(DELIM, "Expected delim");
         if (bar.lexeme[0] == '|') {
-            return NsPrefix(t, bar);
+            return { t, bar };
         }
         SYNTAX_ERROR("Expected |", bar);
     }
     else if (t.type == DELIM && t.lexeme[0] == '|') {
-        return NsPrefix(nullopt, t);
+        return { nullopt, t };
     }
     else {
         SYNTAX_ERROR("Expected |", t);
@@ -508,17 +453,17 @@ NsPrefix SelectorParser::consumeNsPrefix() {
 }
 
 WqName SelectorParser::consumeWqName() {
-    auto t = consume<Token>();
-    if (t.type == IDENT) {
-        if (check('|')) {
-            RECONSUME;
-            return WqName(consumeNsPrefix(), consume(IDENT, "Expected identifier"));
+    auto t = peek<Token>();
+    if (t -> type == IDENT) {
+        if (check('|', 1)) {
+            return { consumeNsPrefix(), consume(IDENT, "Expected identifier") };
         }
-        return WqName(nullopt, t);
+        auto temp = std::move(*t);
+        values.pop_front();
+        return { nullopt, temp };
     }
-    else if (t.type == DELIM && t.lexeme[0] == '*') {
-        RECONSUME;
-        return WqName(consumeNsPrefix(), consume(IDENT, "Expected identifier"));
+    else if (t -> type == DELIM && t -> lexeme[0] == '*') {
+        return { consumeNsPrefix(), consume(IDENT, "Expected identifier") };
     }
     else {
         SYNTAX_ERROR("Expected NsPrefix or identifier", t);
@@ -553,35 +498,32 @@ AttributeSelector SelectorParser::consumeAttributeSelector() {
 }
 
 TypeSelector SelectorParser::consumeTypeSelector() {
-    auto t = consume<Token>();
-    if (t.type == DELIM && t.lexeme[0] == '*') {
-        if (check('|')) {
-            RECONSUME;
+    auto t = peek<Token>();
+    if (t -> type == DELIM && t -> lexeme[0] == '*') {
+        if (check('|', 1)) {
             NsPrefix prefix = consumeNsPrefix();
             if (check('*')) {
-                return TypeSelector(prefix, consume(DELIM, "Expected delim"));
+                return { prefix, consume<Token>() };
             }
             SYNTAX_ERROR("Expected *", peek<Token>());
         }
         else {
-            return TypeSelector(nullopt, t);
+            return { nullopt, consume<Token>() };
         }
     }
-    else if (t.type == IDENT) {
-        if (check('|')) {
-            RECONSUME;
+    else if (t -> type == IDENT) {
+        if (check('|', 1)) {
             NsPrefix prefix = consumeNsPrefix();
-            Token next = consume<Token>();
+            auto next = consume<Token>();
             if (next.type == DELIM && next.lexeme[0] == '*') {
-                return TypeSelector(prefix, next);
+                return { prefix, next };
             }
             else if (next.type == IDENT) {
-                return TypeSelector(WqName(prefix, next));
+                return { WqName(prefix, next) };
             }
         }
         else {
-            RECONSUME;
-            return TypeSelector(consumeWqName());
+            return { consumeWqName() };
         }
     }
     SYNTAX_ERROR("Expected WqName or [NsPrefix? '*']", t);
@@ -590,7 +532,7 @@ TypeSelector SelectorParser::consumeTypeSelector() {
 ClassSelector SelectorParser::consumeClassSelector() {
     auto t = consume(DELIM, "Expected .");
     if (t.lexeme[0] == '.') {
-        return ClassSelector(t, consume(IDENT, "Expected identifier"));
+        return { t, consume(IDENT, "Expected identifier") };
     }
     SYNTAX_ERROR("Expected .", t);
 }
@@ -601,7 +543,11 @@ SUBCLASS_SELECTOR SelectorParser::consumeSubclassSelector() {
     }
     else if (auto t = peek<Token>()) {
         switch (t -> type) {
-            case HASH: SKIP; return *t;
+            case HASH: {
+                auto temp = std::move(*t);
+                values.pop_front();
+                return temp;
+            }
             case DELIM: {
                 if (t -> lexeme[0] == '.') {
                     return consumeClassSelector();
@@ -624,30 +570,30 @@ vector<COMPONENT_VALUE> SelectorParser::consumeDeclarationValue(bool any) {
             switch (t -> type) {
                 case BAD_STRING: case BAD_URL:
                 {
-                    SKIP;
+                    values.pop_front();
                     return val;
                 }
                 case SEMICOLON: {
                     if (!any) {
                         return val;
                     }
-                    SKIP;
                     val.emplace_back(*t);
+                    values.pop_front();
                     break;
                 }
                 case DELIM: {
                     if (t -> lexeme[0] == '!' && !any) {
                         return val;
                     }
-                    SKIP;
                     val.emplace_back(*t);
+                    values.pop_front();
                     break;
                 }
                 case LEFT_PAREN: case LEFT_BRACE: case LEFT_BRACKET:
                 {
-                    SKIP;
                     opening.emplace_back(t -> type);
                     val.emplace_back(*t);
+                    values.pop_front();
                     break;
                 }
                 case RIGHT_PAREN: case RIGHT_BRACE: case RIGHT_BRACKET:
@@ -657,19 +603,19 @@ vector<COMPONENT_VALUE> SelectorParser::consumeDeclarationValue(bool any) {
                     if (t -> type != m) {
                         return val;
                     }
-                    SKIP;
                     val.emplace_back(*t);
+                    values.pop_front();
                     break;
                 }
                 default: {
-                    SKIP;
                     val.emplace_back(*t);
+                    values.pop_front();
                     break;
                 }
             }
         }
         else {
-            val.emplace_back(consume<COMPONENT_VALUE>());
+            val.emplace_back(consume());
         }
     }
 }
@@ -677,7 +623,6 @@ vector<COMPONENT_VALUE> SelectorParser::consumeDeclarationValue(bool any) {
 PseudoClassSelector SelectorParser::consumePseudoClassSelector() {
     auto colon = consume(COLON, "Expected colon");
     if (auto t = peek<Token>()) {
-        SKIP;
         if (t -> type == IDENT) {
             return {colon, *t};
         }
@@ -686,7 +631,6 @@ PseudoClassSelector SelectorParser::consumePseudoClassSelector() {
         }
     }
     else if (auto f = peek<Function>()) {
-        SKIP;
         return {colon, f -> name, f -> value, Token(RIGHT_PAREN, L")")};
     }
     SYNTAX_ERROR("Expected identifier or function", peek<Token>());
@@ -694,12 +638,12 @@ PseudoClassSelector SelectorParser::consumePseudoClassSelector() {
 
 PseudoElementSelector SelectorParser::consumePseudoElementSelector() {
     Token colon = consume(COLON, "Expected :");
-    return PseudoElementSelector(colon, consumePseudoClassSelector());
+    return { colon, consumePseudoClassSelector() };
 }
 
 RelativeSelector SelectorParser::consumeRelativeSelector() {
     COMBINATOR comb = consumeCombinator();
-    return {comb, consumeComplexSelector()};
+    return { comb, consumeComplexSelector() };
 }
 
 SIMPLE_SELECTOR SelectorParser::consumeSimpleSelector() {
@@ -720,9 +664,9 @@ STYLE_BLOCK StyleBlockParser::parse() {
     STYLE_BLOCK block;
     while (auto t = peek<Token>()) {
         switch (t -> type) {
-            case WHITESPACE: case SEMICOLON: SKIP; break;
+            case WHITESPACE: case SEMICOLON: values.pop_front(); break;
             case T_EOF: {
-                SKIP;
+                values.pop_front();
                 return block;
             }
             case AT_KEYWORD: {
@@ -730,12 +674,12 @@ STYLE_BLOCK StyleBlockParser::parse() {
                 break;
             }
             case IDENT: {
-                SKIP;
-                vector<COMPONENT_VALUE> temp = { *t };
-                while (idx < values.size()) {
-                    auto t = peek<Token>();
-                    if (t -> type == SEMICOLON) {
-                        SKIP;
+                vector<COMPONENT_VALUE> temp = { std::move(*t) };
+                values.pop_front();
+                while (!values.empty()) {
+                    auto tok = peek<Token>();
+                    if (tok && tok -> type == SEMICOLON) {
+                        values.pop_front();
                         break;
                     }
                     temp.emplace_back(consumeComponentValue());
@@ -745,7 +689,7 @@ STYLE_BLOCK StyleBlockParser::parse() {
             }
             case DELIM: {
                 if (t -> lexeme[0] == '&') {
-                    SKIP;
+                    values.pop_front();
                     QualifiedRule rule = consumeQualifiedRule();
                     if (rule.block) {
                         block.emplace_back(StyleRule(SelectorParser(rule.prelude).parse(), StyleBlockParser(rule.block -> value).parse()));
@@ -757,10 +701,10 @@ STYLE_BLOCK StyleBlockParser::parse() {
                 break;
             }
             default: {
-                while (idx < values.size()) {
-                    auto t = peek<Token>();
-                    if (t -> type == SEMICOLON) {
-                        SKIP;
+                while (!values.empty()) {
+                    auto tok = peek<Token>();
+                    if (tok && tok -> type == SEMICOLON) {
+                        values.pop_front();
                         break;
                     }
                     consumeComponentValue();
@@ -780,7 +724,7 @@ Declaration DeclarationParser::parse() {
     Token name = consume(IDENT, "Expected identifier"); IGNORE_WHITESPACE;
     Token colon = consume(COLON, "Expected colon"); IGNORE_WHITESPACE;
     Declaration dec(name, colon);
-    while (idx < values.size()) {
+    while (!values.empty()) {
         dec.value.emplace_back(consumeComponentValue());
     }
     if (dec.value.size() > 1) {
