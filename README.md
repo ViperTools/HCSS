@@ -13,6 +13,7 @@ Create a file named `config.hydra` in the root directory of your project with th
 ```
 hcss
     watch
+        delay 500ms
         recursive
         directories
             /
@@ -24,3 +25,19 @@ In your terminal run `hydra css`
 Since `watch` is configured, it should work automatically. Changes to any `.hcss` file in your project will now create a matching `.css` file in the same directory.
 
 ## Advanced Setup
+This section covers more advanced configuration and setup for HCSS. If you just want your HCSS files to be transpiled to CSS and JS in the same directory, just follow the [basic setup](#basic-setup).
+
+### Changing the Configuration File Name
+Use the command line argument `--config` and the path of your configuration file. e.g `hydra css --config "./config/hcss.conf"`.
+> The configuration file must follow the hydra configuration format regardless of the file extension.
+
+### Configuring HCSS
+You can configure many aspects of HCSS to fit your needs. You must begin the HCSS configuration with `hcss` due to the fact that Hydra uses a universal configuration file for the entire project.
+#### watch
+The `watch` option has a few properties and attributes.
+- `<time> delay` Configures the amound of time between each check
+- `recursive` The recursive attribute allows the file watcher to go through directories inside of the specified directories
+- `<path[]> directories` Defines what directories HCSS should check
+- `<path[]> files` Defines specific files to watch
+#### output
+The output property allows you to change the file names of the css files. You can use the `$NAME` variable to get the original file name.
