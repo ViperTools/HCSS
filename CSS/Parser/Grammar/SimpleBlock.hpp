@@ -4,14 +4,15 @@
 #include <utility>
 #include <vector>
 #include <optional>
+using std::move;
 
 struct SimpleBlock {
     Token open;
     std::vector<COMPONENT_VALUE> value;
     std::optional<Token> close;
     explicit SimpleBlock(Token open, std::vector<COMPONENT_VALUE> value = {}, std::optional<Token> close = std::nullopt)
-        : open(std::move(open)),
+        : open(move(open)),
         value(std::move(value)),
-        close(std::move(close))
+        close(move(close))
     {};
 };

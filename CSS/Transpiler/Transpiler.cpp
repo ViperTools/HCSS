@@ -43,7 +43,7 @@ wstring Transpiler::stringify(vector<COMPONENT_VALUE> list) const {
     return s;
 }
 
-wstring Transpiler::stringify(COMBINATOR comb) const {
+wstring Transpiler::stringify(Combinator comb) const {
     return VSTRINGIFY(comb);
 }
 
@@ -131,6 +131,9 @@ wstring Transpiler::stringify(Declaration &decl) const {
 }
 
 wstring Transpiler::stringify(const PseudoClassSelector& sel) const {
+    if (sel.tok.lexeme == L"click") {
+        std::cout << "click event" << std::endl;
+    }
     wstring s = sel.colon.lexeme + sel.tok.lexeme;
     if (sel.closeParen.has_value()) {
         s += L'(';
@@ -161,8 +164,7 @@ wstring Transpiler::stringify(COMPLEX_SELECTOR_LIST list) const {
     for (int i = 0; i < list.size(); i++) {
         COMPLEX_SELECTOR sel = list[i];
         for (int j = 0; j < sel.size(); j++) {
-            COMPLEX_SELECTOR_PAIR pair = sel[j];
-            s += stringify(pair.first) + stringify(pair.second);
+            s += stringify(sel[j].first) + stringify(sel[j].second);
             if (j < sel.size() - 1) s += L' ';
         }
         if (i < list.size() - 1) s += L',';

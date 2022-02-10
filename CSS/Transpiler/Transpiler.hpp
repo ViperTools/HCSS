@@ -16,7 +16,7 @@ class Transpiler : public SyntaxNodeVisitor {
         void visit(std::monostate) const {};
     private:
         wstring stringify(vector<COMPONENT_VALUE> list) const;
-        wstring stringify(COMBINATOR comb) const;
+        wstring stringify(Combinator comb) const;
         wstring stringify(pair<optional<Token>, Token>& prefix) const;
         wstring stringify(PseudoElementSelector sel) const;
         wstring stringify(ClassSelector sel) const;

@@ -1,6 +1,6 @@
 #include "Lexer/Lexer.hpp"
 #include "Parser/Macros.hpp"
-#include "Parser/Parser.hpp"
+#include "Parser/BaseParser.hpp"
 #include "Transpiler/Transpiler.hpp"
 #include "Util/Logger/Task.hpp"
 #include <iostream>
@@ -8,10 +8,10 @@
 
 int main() {
     Task task("PARSER");
-	auto lexResult = task.call<vector<Token>>("LEXING", [] { return Lexer(R"(C:\Users\User\HCSS\CSS\test.hcss)").lex(); });
+	auto lexResult = task.call<vector<Token>>("LEXING", [] { return Lexer(R"(/workspace/HCSS/CSS/test.hcss)").lex(); });
     auto parseResult = task.call<vector<SYNTAX_NODE>>("PARSING", [=] { return BaseParser(lexResult.result).parse(); });
     Transpiler transpiler;
-    std::wofstream compiled(R"(C:\Users\User\HCSS\CSS\test.css)", std::ios::out);
+    std::wofstream compiled(R"(/workspace/HCSS/CSS/test.css)", std::ios::out);
     compiled << task.call<wstring>("TRANSPILING", [=] { Transpiler t; t.visit(parseResult.result); return t.source; }).result;
     task.log();
 	return 0;
