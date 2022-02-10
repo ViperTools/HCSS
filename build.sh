@@ -1,1 +1,0 @@
-mkdir -p build && gcc CSS/*.cpp CSS/*/*.cpp CSS/Util/*/*.cpp -std=c++2a -lstdc++ -o build/main && build/main
