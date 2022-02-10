@@ -4,8 +4,8 @@
 
 #include <iostream>
 
-STYLE_BLOCK StyleBlockParser::parse() {
-    STYLE_BLOCK block;
+StyleBlock StyleBlockParser::parse() {
+    StyleBlock block;
     while (auto t = peek<Token>()) {
         switch (t -> type) {
             case WHITESPACE: case SEMICOLON: values.pop_front(); break;
@@ -18,7 +18,7 @@ STYLE_BLOCK StyleBlockParser::parse() {
                 break;
             }
             case IDENT: {
-                vector<COMPONENT_VALUE> temp = { std::move(*t) };
+                vector<ComponentValue> temp = { std::move(*t) };
                 values.pop_front();
                 while (!values.empty()) {
                     auto tok = peek<Token>();

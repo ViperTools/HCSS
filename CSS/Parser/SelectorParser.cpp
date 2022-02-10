@@ -1,8 +1,8 @@
 #include "SelectorParser.hpp"
 
-COMPLEX_SELECTOR_LIST SelectorParser::parse() {
+ComplexSelectorList SelectorParser::parse() {
     IGNORE_WHITESPACE;
-    COMPLEX_SELECTOR_LIST list;
+    ComplexSelectorList list;
     while (!values.empty()) {
         list.emplace_back(consumeComplexSelector());
         if (check(COMMA)) {
@@ -13,9 +13,9 @@ COMPLEX_SELECTOR_LIST SelectorParser::parse() {
     return list;
 }
 
-COMPLEX_SELECTOR SelectorParser::consumeComplexSelector() {
+ComplexSelector SelectorParser::consumeComplexSelector() {
     IGNORE_WHITESPACE;
-    COMPLEX_SELECTOR selectors = { COMPLEX_SELECTOR_PAIR({ }, consumeCompoundSelector()) };
+    ComplexSelector selectors = {{{}, consumeCompoundSelector()}};
     IGNORE_WHITESPACE;
     while (!values.empty() && !check(T_EOF) && !check(COMMA)) {
         Combinator comb = consumeCombinator();
@@ -56,7 +56,7 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
     if (check(IDENT) || check('*')) {
         type = consumeTypeSelector();
     }
-    vector<SUBCLASS_SELECTOR> subclasses;
+    vector<SubclassSelector> subclasses;
     bool consuming = true;
     while (consuming && !values.empty()) {
         if (auto t = peek<Token>()) {
@@ -97,7 +97,7 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
             }
         }
     }
-    vector<PSEUDO_SELECTOR_PAIR> pseudos;
+    vector<PseudoSelectorPair> pseudos;
     while (check(COLON)) {
         if (check(COLON, 1)) {
             PseudoElementSelector el = consumePseudoElementSelector();
@@ -244,7 +244,7 @@ ClassSelector SelectorParser::consumeClassSelector() {
     SYNTAX_ERROR("Expected .", t);
 }
 
-SUBCLASS_SELECTOR SelectorParser::consumeSubclassSelector() {
+SubclassSelector SelectorParser::consumeSubclassSelector() {
     if (check<SimpleBlock>()) {
         return consumeAttributeSelector();
     }
@@ -269,8 +269,8 @@ SUBCLASS_SELECTOR SelectorParser::consumeSubclassSelector() {
     return { };
 }
 
-vector<COMPONENT_VALUE> SelectorParser::consumeDeclarationValue(bool any) {
-    vector<COMPONENT_VALUE> val;
+vector<ComponentValue> SelectorParser::consumeDeclarationValue(bool any) {
+    vector<ComponentValue> val;
     std::deque<TokenType> opening;
     while (!values.empty()) {
         if (auto t = peek<Token>()) {
@@ -355,8 +355,8 @@ RelativeSelector SelectorParser::consumeRelativeSelector() {
     return { comb, consumeComplexSelector() };
 }
 
-SIMPLE_SELECTOR SelectorParser::consumeSimpleSelector() {
-    SUBCLASS_SELECTOR subclass = consumeSubclassSelector();
+SimpleSelector SelectorParser::consumeSimpleSelector() {
+    SubclassSelector subclass = consumeSubclassSelector();
     if (subclass.index() > 0) {
         return subclass;
     }

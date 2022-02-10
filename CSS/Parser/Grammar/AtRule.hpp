@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Macros.hpp"
+#include "../Types.hpp"
 #include "SimpleBlock.hpp"
 #include <utility>
 #include <vector>
@@ -8,9 +8,9 @@
 
 struct AtRule {
     Token name;
-    std::vector<COMPONENT_VALUE> prelude;
+    std::vector<ComponentValue> prelude;
     std::optional<SimpleBlock> block;
-    explicit AtRule(Token name, std::vector<COMPONENT_VALUE> prelude = {}, std::optional<SimpleBlock> block = std::nullopt)
+    explicit AtRule(Token name, std::vector<ComponentValue> prelude = {}, std::optional<SimpleBlock> block = std::nullopt)
         : name(std::move(name)),
         prelude(std::move(prelude)),
         block(std::move(block))

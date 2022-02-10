@@ -13,7 +13,7 @@
 #include "Grammar/Selector.hpp"
 #include "Grammar/StyleBlock.hpp"
 #include "Grammar/StyleRule.hpp"
-#include "Macros.hpp"
+#include "Types.hpp"
 using std::vector;
 using std::deque;
 
@@ -22,11 +22,11 @@ using std::deque;
 
 class ComponentValueParser {
     public:
-        explicit ComponentValueParser(vector<COMPONENT_VALUE> vec)
+        explicit ComponentValueParser(vector<ComponentValue> vec)
         {
             std::move(vec.begin(), vec.end(), std::back_inserter(values));
         };
-        explicit ComponentValueParser(deque<COMPONENT_VALUE> values)
+        explicit ComponentValueParser(deque<ComponentValue> values)
             : values(std::move(values))
         {};
         explicit ComponentValueParser(const vector<Token>& tokens)
@@ -34,13 +34,13 @@ class ComponentValueParser {
             std::move(tokens.begin(), tokens.end(), std::back_inserter(values));
         };
     protected:
-        deque<COMPONENT_VALUE> values;
-        COMPONENT_VALUE consume();
-        template<typename T = COMPONENT_VALUE> T consume();
+        deque<ComponentValue> values;
+        ComponentValue consume();
+        template<typename T = ComponentValue> T consume();
         Token consume(TokenType type, const string& error);
-        optional<COMPONENT_VALUE> peek(int idx = 0);
-        template<typename T = COMPONENT_VALUE> optional<T> peek(int idx = 0);
-        template<typename T = COMPONENT_VALUE> bool check();
+        optional<ComponentValue> peek(int idx = 0);
+        template<typename T = ComponentValue> optional<T> peek(int idx = 0);
+        template<typename T = ComponentValue> bool check();
         bool check(TokenType type, int idx = 0);
         bool check(const wstring& lexeme, int idx = 0);
         bool check(const wchar_t& lexeme, int idx = 0);

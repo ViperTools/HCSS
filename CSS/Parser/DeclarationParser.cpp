@@ -9,8 +9,8 @@ Declaration DeclarationParser::parse() {
         consumeComponentValue(dec.value);
     }
     if (dec.value.size() > 1) {
-        COMPONENT_VALUE cvSlast = dec.value[dec.value.size() - 2];
-        COMPONENT_VALUE cvLast = dec.value.back();
+        ComponentValue cvSlast = dec.value[dec.value.size() - 2];
+        ComponentValue cvLast = dec.value.back();
         if (std::holds_alternative<Token>(cvSlast) && std::holds_alternative<Token>(cvLast)) {
             Token tSlast = std::get<Token>(cvSlast);
             Token tLast = std::get<Token>(cvLast);

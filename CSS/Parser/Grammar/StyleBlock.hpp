@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Macros.hpp"
+#include "../Types.hpp"
 #include <utility>
 #include <vector>
 #include <variant>
@@ -9,9 +9,9 @@ class StyleRule;
 struct Declaration {
     Token name;
     Token colon;
-    std::vector<COMPONENT_VALUE> value;
+    std::vector<ComponentValue> value;
     bool important;
-    Declaration(Token name, Token colon, std::vector<COMPONENT_VALUE> value = {}, bool important = false)
+    Declaration(Token name, Token colon, std::vector<ComponentValue> value = {}, bool important = false)
         : name(std::move(name)),
         colon(std::move(colon)),
         value(std::move(value)),
@@ -19,7 +19,5 @@ struct Declaration {
     {};
 };
 
-#define RULE_TYPES AtRule, QualifiedRule
-#define RULE variant<RULE_TYPES>
-#define STYLE_BLOCK_VARIANT std::variant<std::monostate, Declaration, RULE_TYPES, StyleRule>
-#define STYLE_BLOCK std::vector<STYLE_BLOCK_VARIANT>
+using StyleBlockVariant = std::variant<std::monostate, Declaration, AtRule, QualifiedRule, StyleRule>;
+using StyleBlock = std::vector<StyleBlockVariant>;

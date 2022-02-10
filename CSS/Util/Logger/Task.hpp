@@ -49,7 +49,7 @@ string Task::str() {
 }
 
 void Task::log() {
-    Logger::log(str(), DEBUG);
+    Logger::log(str(), LOG_DEBUG);
 }
 
 template <typename T>
@@ -59,5 +59,5 @@ string CallResult<T>::str() {
 
 template <typename T>
 void CallResult<T>::log(const string& taskName) {
-    Logger::log(str(), DEBUG);
+    Logger::log(str(), LOG_DEBUG);
 }

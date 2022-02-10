@@ -4,6 +4,6 @@
 
 class StyleBlockParser : public BaseParser {
     public:
-        STYLE_BLOCK parse();
+        StyleBlock parse();
         using BaseParser::BaseParser;
 };

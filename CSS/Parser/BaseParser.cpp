@@ -11,10 +11,10 @@
 /**
  * @brief Parses a base style sheet
  * 
- * @return vector<SYNTAX_NODE> A list of parsed SyntaxNodes
+ * @return vector<SyntaxNode> A list of parsed SyntaxNodes
  */
 
-vector<SYNTAX_NODE> BaseParser::parse() {
+vector<SyntaxNode> BaseParser::parse() {
     rules = consumeRulesList();
     top = false;
     for (auto & i : rules) {
@@ -30,8 +30,8 @@ vector<SYNTAX_NODE> BaseParser::parse() {
     return rules;
 }
 
-vector<SYNTAX_NODE> BaseParser::consumeRulesList() {
-    vector<SYNTAX_NODE> list;
+vector<SyntaxNode> BaseParser::consumeRulesList() {
+    vector<SyntaxNode> list;
     while (auto t = peek<Token>()) {
         switch (t -> type) {
             case WHITESPACE: values.pop_front(); break;
@@ -67,7 +67,7 @@ vector<SYNTAX_NODE> BaseParser::consumeRulesList() {
  * @return monostate if the next component value is a variable, otherwise the next component value
  */
 
-COMPONENT_VALUE BaseParser::consumeComponentValue() {
+ComponentValue BaseParser::consumeComponentValue() {
     if (auto t = peek<Token>()) {
         switch (t -> type) {
             case LEFT_BRACE: case LEFT_BRACKET: case LEFT_PAREN: {
@@ -98,7 +98,7 @@ COMPONENT_VALUE BaseParser::consumeComponentValue() {
  * @param vec The vector to push the consumed value to
  */
 
-void BaseParser::consumeComponentValue(vector<COMPONENT_VALUE>& vec) {
+void BaseParser::consumeComponentValue(vector<ComponentValue>& vec) {
     auto v = consumeComponentValue();
     if (v.index() != 0) {
         vec.emplace_back(v);
@@ -212,7 +212,7 @@ void BaseParser::consumeVariable() {
     if (check('=')) {
         values.pop_front();
         IGNORE_WHITESPACE;
-        vector<COMPONENT_VALUE> val;
+        vector<ComponentValue> val;
         while (!values.empty()) {
             if (auto t = peek<Token>()) {
                 if ((t -> type == WHITESPACE && t -> lexeme.find('\n') != string::npos) || t -> type == SEMICOLON) {

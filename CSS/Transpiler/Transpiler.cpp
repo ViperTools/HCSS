@@ -5,8 +5,8 @@
 using std::wstring;
 using std::pair;
 
-void Transpiler::visit(const std::vector<SYNTAX_NODE>& nodes) const {
-    for (SYNTAX_NODE node : nodes) {
+void Transpiler::visit(const std::vector<SyntaxNode>& nodes) const {
+    for (SyntaxNode node : nodes) {
         std::visit([this](auto n) { return this->visit(n); }, node);
     }
 }
@@ -35,9 +35,9 @@ void Transpiler::visit(StyleRule rule) const {
 #define OSTRINGIFY(v) ((v) ? stringify(*(v)) : L"")
 #define OSTRINGIFY_OR(v, d) ((v).has_value() ? stringify((v).value()) : (d))
 
-wstring Transpiler::stringify(vector<COMPONENT_VALUE> list) const {
+wstring Transpiler::stringify(vector<ComponentValue> list) const {
     wstring s;
-    for (COMPONENT_VALUE cv : list) {
+    for (ComponentValue cv : list) {
         s += VSTRINGIFY(cv);
     }
     return s;
@@ -115,7 +115,7 @@ wstring Transpiler::stringify(StyleRule& rule, optional<wstring> nestSel) const 
     if (nestSel) sel = *nestSel + sel;
     wstring s = sel + (rule.block.size() > 0 ? L"{" : L"");
     wstring nest;
-    for (STYLE_BLOCK_VARIANT val : rule.block) {
+    for (StyleBlockVariant val : rule.block) {
         if (auto r = std::get_if<StyleRule>(&val)) {
             nest += stringify(*r, L":is(" + sel + L")");
         }
@@ -147,10 +147,10 @@ wstring Transpiler::stringify(AttributeSelector sel) const {
 
 wstring Transpiler::stringify(CompoundSelector sel) const {
     wstring s = OSTRINGIFY(sel.typeSelector);
-    for (SUBCLASS_SELECTOR ss : sel.subclassSelectors) {
+    for (SubclassSelector ss : sel.subclassSelectors) {
         s += VSTRINGIFY(ss);
     }
-    for (PSEUDO_SELECTOR_PAIR psp : sel.pseudoSelectors) {
+    for (PseudoSelectorPair psp : sel.pseudoSelectors) {
         s += stringify(psp.first);
         for (const PseudoClassSelector& pcs : psp.second) {
             s += stringify(pcs);
@@ -159,10 +159,10 @@ wstring Transpiler::stringify(CompoundSelector sel) const {
     return s;
 }
 
-wstring Transpiler::stringify(COMPLEX_SELECTOR_LIST list) const {
+wstring Transpiler::stringify(ComplexSelectorList list) const {
     wstring s;
     for (int i = 0; i < list.size(); i++) {
-        COMPLEX_SELECTOR sel = list[i];
+        ComplexSelector sel = list[i];
         for (int j = 0; j < sel.size(); j++) {
             s += stringify(sel[j].first) + stringify(sel[j].second);
             if (j < sel.size() - 1) s += L' ';

@@ -4,9 +4,12 @@ using std::string;
 using std::pair;
 
 std::map<LogType, std::pair<std::string, int>> colors = {
-        { DEBUG, { "DEBUG", 33 }},
-        { ERROR, { "ERROR", 31 }},
-        { OUT, { "OUTPUT", 0 }}
+        { LOG_OUTPUT, { "OUTPUT", 0 }},
+        { LOG_DEBUG, { "DEBUG", 93 }},
+        { LOG_SUCCESS, { "SUCCESS", 32 }},
+        { LOG_FAIL, { "FAIL", 31 }},
+        { LOG_WARNING, { "WARNING", 33 }},
+        { LOG_ERROR, { "ERROR", 31 }}
 };
 
 void Logger::log(std::string str, LogType type) {

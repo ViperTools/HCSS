@@ -11,7 +11,7 @@
  * @return The next ComponentValue
  */
 
-COMPONENT_VALUE ComponentValueParser::consume() {
+ComponentValue ComponentValueParser::consume() {
     auto temp = std::move(values.front());
     values.pop_front();
     return temp;
@@ -41,8 +41,8 @@ Token ComponentValueParser::consume(TokenType type, const string& error) {
  * @return nullopt on failure
  */
 
-optional<COMPONENT_VALUE> ComponentValueParser::peek(int idx) {
-    return !values.empty() && idx < values.size() ? optional<COMPONENT_VALUE>(values[idx]) : nullopt;
+optional<ComponentValue> ComponentValueParser::peek(int idx) {
+    return !values.empty() && idx < values.size() ? optional<ComponentValue>(values[idx]) : nullopt;
 }
 
 /**

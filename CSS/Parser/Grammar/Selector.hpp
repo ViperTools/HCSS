@@ -1,19 +1,15 @@
-// Switch #define to typedef when possible
-
 #pragma once
 
-#include "../Macros.hpp"
+#include "../Types.hpp"
 #include <utility>
 #include <vector>
 #include <optional>
 #include <variant>
-#include <utility>
 using std::vector;
 using std::optional;
 using std::variant;
 using std::pair;
 using std::nullopt;
-using std::monostate;
 using std::move;
 
 // [ <ident-token> | '*' ]? '|'
@@ -47,7 +43,7 @@ struct AttrMatcher {
 };
 
 // '>' | '+' | '~' | [ '|' '|' ]
-typedef variant<monostate, Token, pair<Token, Token>> Combinator;
+using Combinator = variant<std::monostate, Token, pair<Token, Token>>;
 
 /*
 '[' <wq-name> ']' |
@@ -56,9 +52,9 @@ typedef variant<monostate, Token, pair<Token, Token>> Combinator;
 struct AttributeSelector {
     Token openBracket;
     WqName name;
-    optional<AttrMatcher> matcher = nullopt;
-    optional<Token> tok = nullopt;
-    optional<Token> modifier = nullopt;
+    optional<AttrMatcher> matcher;
+    optional<Token> tok;
+    optional<Token> modifier;
     Token closeBracket;
     AttributeSelector(Token openBracket, WqName name, Token closeBracket)
         : openBracket(move(openBracket)),
@@ -90,7 +86,7 @@ struct TypeSelector {
 };
 
 // <hash-token>
-typedef Token IdSelector;
+using IdSelector = Token;
 
 // '.' <ident-token>
 struct ClassSelector {
@@ -102,30 +98,27 @@ struct ClassSelector {
     {};
 };
 
+/*
+':' <ident-token> | ':' <function-token> <any-value> ')'
+*/
+struct PseudoClassSelector {
+    Token colon;
+    Token tok;
+    optional<vector<ComponentValue>> anyValue;
+    optional<Token> closeParen;
+    PseudoClassSelector(Token colon, Token tok, optional<vector<ComponentValue>> anyValue = {}, optional<Token> closeParen = {})
+        : colon(move(colon)),
+        tok(move(tok)),
+        anyValue(std::move(anyValue)),
+        closeParen(move(closeParen))
+    {};
+};
+
 // <id-selector> | <class-selector> | <attribute-selector> | <pseudo-class-selector>
-#define SUBCLASS_SELECTOR variant<monostate, IdSelector, ClassSelector, AttributeSelector, PseudoClassSelector>
+using SubclassSelector = variant<std::monostate, IdSelector, ClassSelector, AttributeSelector, PseudoClassSelector>;
 
 // <type-selector> | <subclass-selector>
-#define SIMPLE_SELECTOR variant<TypeSelector, SUBCLASS_SELECTOR>
-
-/*
-':' <ident-token> |
-    ':' <function-token> <any-value> ')'
-*/
-
-struct PseudoClassSelector {
-    public:
-        Token colon;
-        Token tok;
-        optional<vector<COMPONENT_VALUE>> anyValue;
-        optional<Token> closeParen;
-        PseudoClassSelector(Token colon, Token tok, optional<vector<COMPONENT_VALUE>> anyValue = nullopt, optional<Token> closeParen = nullopt)
-            : colon(move(colon)),
-            tok(move(tok)),
-            anyValue(std::move(anyValue)),
-            closeParen(move(closeParen))
-        {};
-};
+using SimpleSelector = variant<TypeSelector, SubclassSelector>;
 
 // ':' <pseudo-class-selector>
 struct PseudoElementSelector {
@@ -141,12 +134,12 @@ struct PseudoElementSelector {
 [ <type-selector>? <subclass-selector>*
     [ <pseudo-element-selector> <pseudo-class-selector>* ]* ]!
 */
-#define PSEUDO_SELECTOR_PAIR pair<PseudoElementSelector, vector<PseudoClassSelector>>
+using PseudoSelectorPair = pair<PseudoElementSelector, vector<PseudoClassSelector>>;
 struct CompoundSelector {
     optional<TypeSelector> typeSelector;
-    vector<SUBCLASS_SELECTOR> subclassSelectors;
-    vector<PSEUDO_SELECTOR_PAIR> pseudoSelectors;
-    explicit CompoundSelector(optional<TypeSelector> typeSelector = nullopt, vector<SUBCLASS_SELECTOR> subclassSelectors = {}, const vector<PSEUDO_SELECTOR_PAIR>& pseudoSelectors = {})
+    vector<SubclassSelector> subclassSelectors;
+    vector<PseudoSelectorPair> pseudoSelectors;
+    explicit CompoundSelector(optional<TypeSelector> typeSelector = nullopt, vector<SubclassSelector> subclassSelectors = {}, const vector<PseudoSelectorPair>& pseudoSelectors = {})
         : typeSelector(move(typeSelector)),
         subclassSelectors(move(subclassSelectors)),
         pseudoSelectors(move(pseudoSelectors))
@@ -154,21 +147,16 @@ struct CompoundSelector {
 };
 
 // <compound-selector> [ <combinator>? <compound-selector> ]*
-#define COMPLEX_SELECTOR_PAIR pair<Combinator, CompoundSelector>
-#define COMPLEX_SELECTOR vector<COMPLEX_SELECTOR_PAIR>
+using ComplexSelector = vector<pair<Combinator, CompoundSelector>>;
 
 // <combinator>? <complex-selector>
 struct RelativeSelector {
     Combinator combinator;
-    COMPLEX_SELECTOR selector;
-    RelativeSelector(Combinator combinator, COMPLEX_SELECTOR selector)
+    ComplexSelector selector;
+    RelativeSelector(Combinator combinator, ComplexSelector selector)
         : selector(move(selector)),
         combinator(move(combinator))
     {};
 };
 
-#define SELECTOR_LIST vector<COMPLEX_SELECTOR>
-#define COMPLEX_SELECTOR_LIST vector<COMPLEX_SELECTOR>
-#define COMPOUND_SELECTOR_LIST vector<CompoundSelector>
-#define SIMPLE_SELECTOR_LIST vector<SIMPLE_SELECTOR>
-#define RELATIVE_SELECTOR_LIST vector<RelativeSelector>
+using ComplexSelectorList = vector<ComplexSelector>;

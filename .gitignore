@@ -1,0 +1,5 @@
+.vscode/
+build/
+.gitpod.yml
+build.sh
+compile_flags.txt

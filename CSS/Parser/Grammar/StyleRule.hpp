@@ -6,9 +6,9 @@
 #include "StyleBlock.hpp"
 
 struct StyleRule {
-    COMPLEX_SELECTOR_LIST selectors;
-    STYLE_BLOCK block;
-    explicit StyleRule(COMPLEX_SELECTOR_LIST selectors, STYLE_BLOCK block = {})
+    ComplexSelectorList selectors;
+    StyleBlock block;
+    explicit StyleRule(ComplexSelectorList selectors, StyleBlock block = {})
         : selectors(std::move(selectors)),
         block(std::move(block))
     {};

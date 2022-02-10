@@ -1,0 +1,11 @@
+div {
+    color: red;
+}
+
+:is(div) p {
+    color: green;
+}
+
+:is(:is(div) p) span {
+    color: blue;
+}

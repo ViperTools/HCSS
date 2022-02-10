@@ -7,7 +7,7 @@ using std::wstring;
 class Transpiler : public SyntaxNodeVisitor {
     public:
         mutable wstring source;
-        void visit(const std::vector<SYNTAX_NODE>& nodes) const override;
+        void visit(const std::vector<SyntaxNode>& nodes) const override;
         void visit(AtRule rule) const override;
         void visit(Function function) const override;
         void visit(QualifiedRule rule) const override;
@@ -15,7 +15,7 @@ class Transpiler : public SyntaxNodeVisitor {
         void visit(StyleRule rule) const override;
         void visit(std::monostate) const {};
     private:
-        wstring stringify(vector<COMPONENT_VALUE> list) const;
+        wstring stringify(vector<ComponentValue> list) const;
         wstring stringify(Combinator comb) const;
         wstring stringify(pair<optional<Token>, Token>& prefix) const;
         wstring stringify(PseudoElementSelector sel) const;
@@ -35,5 +35,5 @@ class Transpiler : public SyntaxNodeVisitor {
         wstring stringify(const PseudoClassSelector& sel) const;
         wstring stringify(AttributeSelector sel) const;
         wstring stringify(CompoundSelector sel) const;
-        wstring stringify(COMPLEX_SELECTOR_LIST list) const;
+        wstring stringify(ComplexSelectorList list) const;
 };

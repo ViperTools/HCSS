@@ -4,11 +4,14 @@
 #include <map>
 
 enum LogType {
-    DEBUG,
-    ERROR,
-    OUT
+    LOG_OUTPUT,
+    LOG_DEBUG,
+    LOG_SUCCESS,
+    LOG_FAIL,
+    LOG_WARNING,
+    LOG_ERROR
 };
 
 struct Logger {
-    static void log(std::string str, LogType type = OUT);
+    static void log(std::string str, LogType type = LOG_OUTPUT);
 };

@@ -4,10 +4,10 @@
 
 class SelectorParser : public ComponentValueParser {
     public:
-        COMPLEX_SELECTOR_LIST parse();
+        ComplexSelectorList parse();
         using ComponentValueParser::ComponentValueParser;
     private:
-        COMPLEX_SELECTOR consumeComplexSelector();
+        ComplexSelector consumeComplexSelector();
         CompoundSelector consumeCompoundSelector();
         AttrMatcher consumeAttrMatcher();
         Combinator consumeCombinator();
@@ -15,11 +15,11 @@ class SelectorParser : public ComponentValueParser {
         WqName consumeWqName();
         TypeSelector consumeTypeSelector();
         ClassSelector consumeClassSelector();
-        SUBCLASS_SELECTOR consumeSubclassSelector();
+        SubclassSelector consumeSubclassSelector();
         PseudoClassSelector consumePseudoClassSelector();
         PseudoElementSelector consumePseudoElementSelector();
         AttributeSelector consumeAttributeSelector();
         RelativeSelector consumeRelativeSelector();
-        SIMPLE_SELECTOR consumeSimpleSelector();
-        vector<COMPONENT_VALUE> consumeDeclarationValue(bool any = false);
+        SimpleSelector consumeSimpleSelector();
+        vector<ComponentValue> consumeDeclarationValue(bool any = false);
 };
