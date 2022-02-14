@@ -1,200 +1,43 @@
 <p align="center">
-  <img src="/HCSS%20Logo.svg" width="50%">
+  <img src="/HCSS%20Logo.svg" width="75%">
 </p>
-<p align="center">HCSS (Hydra CSS) is a modified (and hopefully improved) version of CSS that provides extra functionality and syntax shortcuts. It is not like most other CSS preprocessors. HCSS does not allow blatantly invalid syntax, and is not as forgiving in many aspects. This allows HCSS to stay readable and consistent across projects.</p>
+<p align="center"><a href="https://github.com/ViperTools/HCSS-Public">Looking for documentation?</a></p>
 
-# Notes
-- Invalid syntax is NOT allowed. Normally CSS parsers just skip invalid syntax, but I don't think there is really a reason to use invalid syntax in HCSS. The HCSS parser will error and notify you if there is invalid syntax.
-- Nesting requires the nesting selector `&` before each selector. This enhances readability and allows people to quickly spot where extra rules are.
-- Unlike other similar projects, variables and custom media queries must be defined before they are used. This keeps the code organized and accessible to other developers.
+This is the source code for the HCSS transpiler. It consists of 3 main parts, not including utilities like the testing framework. First is the lexer, which takes in the HCSS source code and tokenizes it. Next is the parser, which takes in tokens from the lexer and produces a list of syntax nodes. Lastly we have the transpiler, which takes in the nodes from the parser and produces regular CSS and possibly JS. If you want more information on how the HCSS source code works, visit the [under the hood](https://github.com/ViperTools/HCSS-Public/wiki/Under-the-Hood) section in the HCSS wiki.
 
-# Features
-## Nesting Selector
-Like most CSS preprocessors, HCSS has nesting capabilities. Nesting can be achieved with the nesting selector `&`. You can (in theory) nest infinitely, but for the sake of readability, it is recommended not to over nest styles.
-### HCSS
-```css
-one, two {
-  color: red;
-  &three {
-    color: blue;
-  }
-}
+# Getting Started
+Using HCSS is very simple. It uses an easy to use configuration format and allows you to get up and running with minimal hassle.<br/>
+First, make sure you've installed Hydra. If you deselected the `Add to path` option in the installer, you need to use the path to the hydra executable rather than just typing `hydra`.
+## Basic Setup
+Create a file named `config.hydra` in the root directory of your project with the following text:
 ```
-### CSS
-```css
-one, two {
-  color: red;
-}
+hcss
+    watch
+        delay 500ms
+        recursive
+        directories
+            /
+        files
+            *.hcss
+    output $NAME.css
+```
+In your terminal run `hydra css`
+Since `watch` is configured, it should work automatically. Changes to any `.hcss` file in your project will now create a matching `.css` file in the same directory.
 
-:is(one, two) three {
-  color: blue;
-}
-```
-Because of the way the nesting selector is parsed, it can also be used as a parent selector.
-### HCSS
-```css
-one, two {
-  &:hover {
-    color: red;
-  }
-}
-```
-### CSS
-```css
-:is(one, two):hover {
-  color: red;
-}
-```
+## Advanced Setup
+This section covers more advanced configuration and setup for HCSS. If you just want your HCSS files to be transpiled to CSS and JS in the same directory, just follow the [basic setup](#basic-setup).
 
-## Variables
-HCSS has variables that can be declared at the top level. They are terminated at a line break or semicolon unless the value is a block. The syntax for variables is `$name = value`.
-### HCSS
-```css
-$var = #FFF;
+### Changing the Configuration File Name
+Use the command line argument `--config` and the path of your configuration file. e.g `hydra css --config "./config/hcss.conf"`.
+> The configuration file must follow the hydra configuration format regardless of the file extension.
 
-p {
-  color: $var;
-}
-```
-### CSS
-```css
-p {
-  color: #FFF;
-}
-```
-
-## Custom Media Queries
-HCSS allows you to define your own media queries and use them later. Like variables, a custom media query must be declared before use.
-### HCSS
-```css
-@mobile only screen and (max-width: 600px);
-
-@mobile {
-  p {
-    color: red;
-  }
-}
-```
-### CSS
-```css
-@media only screen and (max-width: 600px) {
-  p {
-    color: red;
-  }
-}
-```
-
-## Events
-HCSS adds events to elements using the pseudo selector syntax. They are pretty useless on their own, but when used in combination with the [toggle operator](#toggle-operator), events are extremely powerful.
-### HCSS
-```css
-button:click {
-  background-color: red;
-}
-```
-### CSS & JS
-```css
-.button-click {
-  background-color: red;
-}
-```
-```js
-document.querySelectorAll('button').forEach(e => {
-  e.addEventListener('click', () => {
-    e.classList.add('button-click');
-  })
-})
-```
-
-## Toggle Operator
-The toggle operator `|` is used to switch between property values in events.
-### HCSS
-```css
-button a:click {
-  background-color: red | blue | green;
-  color: white | black;
-}
-```
-### CSS & JS
-```css
-.button-a-click1 {
-  background-color: red;
-  color: white;
-}
-
-.button-a-click2 {
-  background-color: blue;
-  color: black;
-}
-
-.button-a-click3 {
-  background-color: green;
-  color: white;
-}
-```
-```js
-document.querySelectorAll('button a').forEach(e => {
-  let i = 1, max = 3;
-  e.addEventListener('click', () => {
-    e.classList.remove(`button-a-click${i - 1}`);
-    if (i > max) i = 1;
-    e.classList.add(`button-a-click${i}`);
-    i++;
-  })
-})
-```
-
-## JavaScript Eval
-HCSS allows you to use JavaScript code right in your CSS stylesheet using `$EVAL`. It can only be used in events or at the top level. `$EVAL` can take a list of parameters if inside of an event.
-###  HCSS
-```css
-button:click {
-  $EVAL(ev) {
-    console.log('I have been clicked!', ev);
-  }
-}
-```
-### JS
-```js
-document.querySelectorAll('button').forEach(e => {
-  e.addEventListener('click', (ev) => {
-    console.log('I have been clicked!', ev);
-  })
-})
-```
-
-## Themes
-Themes allow you to easily implement custom themes without writing any JavaScript. Themes can be created using `@theme`. The `theme` property can also be used with the [toggle operator](#toggle-operator) to toggle the theme with an event. There is also a `global-theme` property that will apply the theme to the body element.
-### HCSS
-```css
-@theme dark {
-  background: black;
-  color: white;
-}
-
-p {
-  theme: dark;
-}
-```
-### CSS
-```css
-p {
-  background: black;
-  color: white;
-}
-```
-
-# Development
-- [x] Lexer
-- [x] Parser
-- [x] Transpiler
-- [x] Switch some grammar elements to structs over pairs to improve readability and extendibility
-- [x] Nesting
-- [ ] Custom variable syntax
-- [ ] Events
-- - [ ] $EVAL
-- - [ ] Toggle syntax (a | b)
-- [ ] Custom media queries
-- [ ] Themes
-- [ ] Add Doxygen comments to improve readability
-- [ ] Optimize as much as possible
+### Configuring HCSS
+You can configure many aspects of HCSS to fit your needs. You must begin the HCSS configuration with `hcss` due to the fact that Hydra uses a universal configuration file for the entire project.
+#### watch
+The `watch` option has a few properties and attributes.
+- `<time> delay` Configures the amound of time between each check
+- `recursive` The recursive attribute allows the file watcher to go through directories inside of the specified directories
+- `<path[]> directories` Defines what directories HCSS should check
+- `<path[]> files` Defines specific files to watch
+#### output
+The output property allows you to change the file names of the css files. You can use the `$NAME` variable to get the original file name.
