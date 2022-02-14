@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="/HCSS%20Logo.svg" width="50%">
+  <img src="/HCSS%20Logo.svg" width="75%">
 </p>
 <p align="center"><a href="https://github.com/ViperTools/HCSS-Public">Looking for documentation?</a></p>
 
