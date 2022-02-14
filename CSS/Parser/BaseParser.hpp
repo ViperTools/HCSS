@@ -11,13 +11,16 @@ class BaseParser : public ComponentValueParser {
     protected:
         vector<SyntaxNode> rules;
         std::map<wstring, vector<ComponentValue>> variables;
+        std::map<wstring, vector<ComponentValue>> atRules;
+        std::map<wstring, vector<ComponentValue>> mixins;
         bool top = true;
-        AtRule consumeAtRule();
+        optional<AtRule> consumeAtRule();
         Function consumeFunction();
         QualifiedRule consumeQualifiedRule();
         SimpleBlock consumeSimpleBlock();
         ComponentValue consumeComponentValue();
         void consumeComponentValue(vector<ComponentValue>& vec);
         vector<SyntaxNode> consumeRulesList();
+        vector<ComponentValue> consumeValueList();
         void consumeVariable();
 };

@@ -1,4 +1,5 @@
 #include "Transpiler.hpp"
+#include "../Parser/BaseParser.hpp"
 #include <iostream>
 #include <string>
 #include <variant>
@@ -12,28 +13,28 @@ void Transpiler::visit(const std::vector<SyntaxNode>& nodes) const {
 }
 
 void Transpiler::visit(AtRule rule) const {
-    source += stringify(rule) + L' ';
+    source += stringify(rule);
 }
 
 void Transpiler::visit(Function function) const {
-    source += stringify(function) + L' ';
+    source += stringify(function);
 }
 
 void Transpiler::visit(QualifiedRule rule) const {
-    source += stringify(rule) + L' ';
+    source += stringify(rule);
 }
 
 void Transpiler::visit(SimpleBlock block) const {
-    source += stringify(block) + L' ';
+    source += stringify(block);
 }
 
 void Transpiler::visit(StyleRule rule) const {
-    source += stringify(rule) + L' ';
+    source += stringify(rule);
 }
 
 #define VSTRINGIFY(v) (!std::holds_alternative<std::monostate>(v) ? std::visit([this](auto n) -> wstring { return this -> stringify(n); }, v) : L"")
 #define OSTRINGIFY(v) ((v) ? stringify(*(v)) : L"")
-#define OSTRINGIFY_OR(v, d) ((v).has_value() ? stringify((v).value()) : (d))
+#define OSTRINGIFY_OR(v, d) ((v) ? stringify((v).value()) : (d))
 
 wstring Transpiler::stringify(vector<ComponentValue> list) const {
     wstring s;
@@ -95,7 +96,13 @@ wstring Transpiler::stringify(pair<Token, Token>& pair) const {
 }
 
 wstring Transpiler::stringify(AtRule& rule) const {
-    return L'@' + rule.name.lexeme + stringify(rule.prelude) + OSTRINGIFY_OR(rule.block, L";");
+    source += L'@' + rule.name.lexeme + L' ' + stringify(rule.prelude);
+    if (rule.block) {
+        source += L'{';
+        visit(BaseParser(rule.block -> value).parse());
+        return L"}";
+    }
+    return L";";
 }
 
 wstring Transpiler::stringify(SimpleBlock& block) const {
@@ -131,11 +138,8 @@ wstring Transpiler::stringify(Declaration &decl) const {
 }
 
 wstring Transpiler::stringify(const PseudoClassSelector& sel) const {
-    if (sel.tok.lexeme == L"click") {
-        std::cout << "click event" << std::endl;
-    }
     wstring s = sel.colon.lexeme + sel.tok.lexeme;
-    if (sel.closeParen.has_value()) {
+    if (sel.closeParen) {
         s += L'(';
     }
     return s + OSTRINGIFY(sel.anyValue) + OSTRINGIFY(sel.closeParen);

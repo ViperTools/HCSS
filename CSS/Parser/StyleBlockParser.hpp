@@ -6,4 +6,6 @@ class StyleBlockParser : public BaseParser {
     public:
         StyleBlock parse();
         using BaseParser::BaseParser;
+    private:
+        Declaration consumeDeclaration();
 };

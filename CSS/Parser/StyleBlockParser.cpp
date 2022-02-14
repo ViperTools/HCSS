@@ -1,7 +1,8 @@
 #include "StyleBlockParser.hpp"
+#include "BaseParser.hpp"
+#include "ComponentValueParser.hpp"
+#include "Grammar/StyleBlock.hpp"
 #include "SelectorParser.hpp"
-#include "DeclarationParser.hpp"
-
 #include <iostream>
 
 StyleBlock StyleBlockParser::parse() {
@@ -14,21 +15,14 @@ StyleBlock StyleBlockParser::parse() {
                 return block;
             }
             case AT_KEYWORD: {
-                block.emplace_back(consumeAtRule());
+                auto rule = consumeAtRule();
+                if (rule) {
+                    block.emplace_back(*rule);
+                }
                 break;
             }
             case IDENT: {
-                vector<ComponentValue> temp = { std::move(*t) };
-                values.pop_front();
-                while (!values.empty()) {
-                    auto tok = peek<Token>();
-                    if (tok && tok -> type == SEMICOLON) {
-                        values.pop_front();
-                        break;
-                    }
-                    consumeComponentValue(temp);
-                }
-                block.emplace_back(DeclarationParser(temp).parse());
+                block.emplace_back(consumeDeclaration());
                 break;
             }
             case DELIM: {
@@ -39,7 +33,6 @@ StyleBlock StyleBlockParser::parse() {
                         block.emplace_back(StyleRule(SelectorParser(rule.prelude).parse(), StyleBlockParser(rule.block -> value).parse()));
                     }
                     else {
-                        std::cout << "no block" << std::endl;
                         block.emplace_back(StyleRule(SelectorParser(rule.prelude).parse()));
                     }
                 }
@@ -59,4 +52,40 @@ StyleBlock StyleBlockParser::parse() {
         }
     }
     return block;
+}
+
+Declaration StyleBlockParser::consumeDeclaration() {
+    Token name = consume(IDENT, "Expected identifier"); IGNORE_WHITESPACE;
+    Token colon = consume(COLON, "Expected colon"); IGNORE_WHITESPACE;
+    Declaration dec(name, colon);
+    while (!values.empty()) {
+        auto tok = peek<Token>();
+        if (tok && tok -> type == SEMICOLON) {
+            values.pop_front();
+            break;
+        }
+        consumeComponentValue(dec.value);
+    }
+    if (dec.value.size() > 1) {
+        if (auto t1 = std::get_if<Token>(&dec.value.back())) {
+            if (auto t2 = std::get_if<Token>(&dec.value[dec.value.size() - 2])) {
+                if (t1 -> type == DELIM && t1 -> lexeme[0] == L'!' && t2 -> type == IDENT && wstrcompi(t2 -> lexeme, L"important")) {
+                    dec.value.pop_back();
+                    dec.value.pop_back();
+                }
+            }
+        }
+    }
+    // Remove all whitespace at end
+    for (int i = dec.value.size() - 1; i >= 0; i--) {
+        if (auto t = std::get_if<Token>(&dec.value[i])) {
+            if (t -> type == WHITESPACE) {
+                dec.value.erase(dec.value.begin() + i);
+            }
+            else {
+                break;
+            }
+        }
+    }
+    return dec;
 }

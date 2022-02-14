@@ -1,4 +1,5 @@
 #include "SelectorParser.hpp"
+#include <queue>
 
 ComplexSelectorList SelectorParser::parse() {
     IGNORE_WHITESPACE;
@@ -71,13 +72,10 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
                     break;
                 }
                 case COLON: {
-                    bool isColon = check(COLON, 1);
-                    if (isColon) {
+                    if (check(COLON, 1)) {
                         consuming = false;
                         break;
                     }
-                    subclasses.emplace_back(consumeSubclassSelector());
-                    break;
                 }
                 case HASH:
                 case LEFT_BRACKET: {
@@ -92,7 +90,7 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
         }
         else {
             auto block = peek<SimpleBlock>();
-            if (block.has_value() && block -> open.type == LEFT_BRACKET) {
+            if (block && block -> open.type == LEFT_BRACKET) {
                 subclasses.emplace_back(consumeSubclassSelector());
             }
         }
@@ -116,7 +114,7 @@ CompoundSelector SelectorParser::consumeCompoundSelector() {
             break;
         }
     }
-    if (!type.has_value() && subclasses.empty() && pseudos.empty()) {
+    if (!type && subclasses.empty() && pseudos.empty()) {
         SYNTAX_ERROR("A compound selector requires at least one value. If there is a value at this position, it is most likely invalid.", peek<Token>());
     }
     return CompoundSelector(type, subclasses, pseudos);
@@ -271,7 +269,7 @@ SubclassSelector SelectorParser::consumeSubclassSelector() {
 
 vector<ComponentValue> SelectorParser::consumeDeclarationValue(bool any) {
     vector<ComponentValue> val;
-    std::deque<TokenType> opening;
+    std::queue<TokenType> opening;
     while (!values.empty()) {
         if (auto t = peek<Token>()) {
             switch (t -> type) {
@@ -298,15 +296,15 @@ vector<ComponentValue> SelectorParser::consumeDeclarationValue(bool any) {
                 }
                 case LEFT_PAREN: case LEFT_BRACE: case LEFT_BRACKET:
                 {
-                    opening.emplace_back(t -> type);
+                    opening.emplace(t -> type);
                     val.emplace_back(*t);
                     values.pop_front();
                     break;
                 }
                 case RIGHT_PAREN: case RIGHT_BRACE: case RIGHT_BRACKET:
                 {
-                    TokenType m = mirror(opening.back());
-                    opening.pop_back();
+                    TokenType m = mirror(opening.front());
+                    opening.pop();
                     if (t -> type != m) {
                         return val;
                     }

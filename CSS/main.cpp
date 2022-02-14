@@ -9,8 +9,11 @@ void test(string name, TestOptions options = {}) {
     Test(testPath + name, options).test();
 }
 
-int main() {
-    test("Nesting");
-    test("Performance", {OUTPUT_NEVER, {true}, {false}, {true, 1500}});
+int main(int argc, char **argv) {
+    // test("Nesting");
+    // test("Performance", {OUTPUT_ALWAYS, {true}, {false}, {true, 1500}});
+    // test("Media Queries");
+    test("Mixin");
+    // test("Any", {OUTPUT_NEVER, {false}, {false}});
     return 0;
 }

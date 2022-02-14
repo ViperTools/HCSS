@@ -1,0 +1,14 @@
+@media only screen and (max-width: 650px) {
+    p {
+        color:red;
+    }
+    span {
+        color:blue;
+    }
+}
+
+@media only screen and (max-width: 650px) {
+    p {
+        color:red;
+    }
+}

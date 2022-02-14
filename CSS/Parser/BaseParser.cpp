@@ -1,9 +1,10 @@
-// TODO Fix consuming a component value by somehow ignoring the returned value if a variable was consumed
+// Improve consuming at rules. Possibly handle mixins in the transpiler.
 
 #include "BaseParser.hpp"
 #include "ComponentValueParser.hpp"
 #include "SelectorParser.hpp"
 #include "StyleBlockParser.hpp"
+#include "Types.hpp"
 
 #include <iostream>
 #include <variant>
@@ -20,7 +21,9 @@ vector<SyntaxNode> BaseParser::parse() {
     for (auto & i : rules) {
         if (auto rule = std::get_if<QualifiedRule>(&i)) {
             if (rule -> block) {
-                i = StyleRule(SelectorParser(rule -> prelude).parse(), StyleBlockParser(rule -> block -> value).parse());
+                StyleBlockParser parser(rule -> block -> value);
+                parser.mixins = mixins;
+                i = StyleRule(SelectorParser(rule -> prelude).parse(), parser.parse());
             }
             else {
                 i = StyleRule(SelectorParser(rule -> prelude).parse());
@@ -43,7 +46,10 @@ vector<SyntaxNode> BaseParser::consumeRulesList() {
                 break;
             }
             case AT_KEYWORD: {
-                list.emplace_back(consumeAtRule());
+                auto rule = consumeAtRule();
+                if (rule) {
+                    list.emplace_back(*rule);
+                }
                 break;
             }
             case DELIM: {
@@ -100,40 +106,92 @@ ComponentValue BaseParser::consumeComponentValue() {
 
 void BaseParser::consumeComponentValue(vector<ComponentValue>& vec) {
     auto v = consumeComponentValue();
-    if (v.index() != 0) {
+    if (v.index() > 0) {
         vec.emplace_back(v);
     }
 }
 
-AtRule BaseParser::consumeAtRule() {
+/**
+ * @brief Handles normal at-rules and custom media queries
+ * 
+ * @return optional<AtRule> Returns nullopt if it is a custom media query, otherwise an AtRule
+ */
+
+optional<AtRule> BaseParser::consumeAtRule() {
     Token at = consume(AT_KEYWORD, "Expected AT_KEYWORD");
-    AtRule rule(at);
-    while (!values.empty()) {
-        if (auto t = peek<Token>()) {
-            switch (t -> type) {
-                case T_EOF: case SEMICOLON: values.pop_front(); return rule;
-                case LEFT_BRACE: {
-                    rule.block = consumeSimpleBlock();
+    if (wstrcompi(at.lexeme, L"mixin")) {
+        IGNORE_WHITESPACE;
+        auto name = consume(IDENT, "Expected identifier");
+        IGNORE_WHITESPACE;
+        if (check(LEFT_BRACE)) {
+            mixins[name.lexeme] = consumeSimpleBlock().value;
+        }
+        else {
+            SYNTAX_ERROR("Expected opening brace", nullopt);
+        }
+        return nullopt;
+    }
+    else if (wstrcompi(at.lexeme, L"include")) {
+        vector<wstring> include;
+        while (!values.empty()) {
+            auto t = consume<Token>();
+            if (t.type == SEMICOLON) {
+                break;
+            }
+            else if (t.type == IDENT) {
+                include.push_back(t.lexeme);
+            }
+            else if (t.type != WHITESPACE && t.type != COMMA) {
+                SYNTAX_ERROR("Expected identifier or comma", t);
+            }
+        }
+        for (int i = include.size() - 1; i >= 0; i--) {
+            wstring s = include[i];
+            if (mixins.contains(s)) {
+                values.insert(values.begin(), mixins[s].begin(), mixins[s].end());
+            }
+        }
+        return nullopt;
+    }
+    IGNORE_WHITESPACE;
+    if (check('=') && !wstrcompi(at.lexeme, L"media")) {
+        values.pop_front();
+        atRules[at.lexeme] = consumeValueList();
+    }
+    else if (atRules.contains(at.lexeme)) {
+        values.insert(values.begin(), atRules[at.lexeme].begin(), atRules[at.lexeme].end());
+        values.push_front(Token(AT_KEYWORD, L"media"));
+    }
+    else {
+        AtRule rule(at);
+        while (!values.empty()) {
+            if (auto t = peek<Token>()) {
+                switch (t -> type) {
+                    case T_EOF: case SEMICOLON: values.pop_front(); return rule;
+                    case LEFT_BRACE: {
+                        rule.block = consumeSimpleBlock();
+                        return rule;
+                    }
+                    default: {
+                        consumeComponentValue(rule.prelude);
+                    }
+                }
+            }
+            else {
+                auto block = peek<SimpleBlock>();
+                if (block && block -> open.type == LEFT_BRACE) {
+                    rule.block = *block;
+                    values.pop_front();
                     return rule;
                 }
-                default: {
+                else {
                     consumeComponentValue(rule.prelude);
                 }
             }
         }
-        else {
-            auto block = peek<SimpleBlock>();
-            if (block.has_value() && block -> open.type == LEFT_BRACE) {
-                rule.block = *block;
-                values.pop_front();
-                return rule;
-            }
-            else {
-                consumeComponentValue(rule.prelude);
-            }
-        }
+        return rule;
     }
-    return rule;
+    return nullopt;
 }
 
 Function BaseParser::consumeFunction() {
@@ -143,6 +201,11 @@ Function BaseParser::consumeFunction() {
             case T_EOF: case RIGHT_PAREN: {
                 values.pop_front();
                 return f;
+            }
+            case COMMA: {
+                consumeComponentValue(f.value);
+                IGNORE_WHITESPACE;
+                break;
             }
             default: {
                 consumeComponentValue(f.value);
@@ -170,7 +233,7 @@ QualifiedRule BaseParser::consumeQualifiedRule() {
         }
         else {
             auto block = peek<SimpleBlock>();
-            if (block.has_value() && block -> open.type == LEFT_BRACE) {
+            if (block && block -> open.type == LEFT_BRACE) {
                 rule.block = *block;
                 values.pop_front();
                 return rule;
@@ -205,24 +268,39 @@ SimpleBlock BaseParser::consumeSimpleBlock() {
     return block;
 }
 
+/**
+ * @brief Consumes a value list for things like variables and custom media queries
+ * 
+ * @return vector<ComponentValue> The list of consumed values
+ */
+
+vector<ComponentValue> BaseParser::consumeValueList() {
+    IGNORE_WHITESPACE;
+    vector<ComponentValue> val;
+    while (!values.empty()) {
+        if (auto t = peek<Token>()) {
+            if ((t -> type == WHITESPACE && t -> lexeme.find('\n') != string::npos) || t -> type == SEMICOLON) {
+                values.pop_front();
+                break;
+            }
+        }
+        consumeComponentValue(val);
+    }
+    return val;
+}
+
+/**
+ * @brief If it is an assignment, it consumes the name and value and adds it to the variables map
+ * @brief Otherwise, it pushes the variable's value to the front of the deque
+ */
+
 void BaseParser::consumeVariable() {
     values.pop_front();
     Token name = consume(IDENT, "Expected identifier");
     IGNORE_WHITESPACE;
     if (check('=')) {
         values.pop_front();
-        IGNORE_WHITESPACE;
-        vector<ComponentValue> val;
-        while (!values.empty()) {
-            if (auto t = peek<Token>()) {
-                if ((t -> type == WHITESPACE && t -> lexeme.find('\n') != string::npos) || t -> type == SEMICOLON) {
-                    values.pop_front();
-                    break;
-                }
-            }
-            consumeComponentValue(val);
-        }
-        variables[name.lexeme] = val;
+        variables[name.lexeme] = consumeValueList();
     }
     else if (variables.contains(name.lexeme)) {
         values.insert(values.begin(), variables[name.lexeme].begin(), variables[name.lexeme].end());

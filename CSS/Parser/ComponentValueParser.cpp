@@ -56,17 +56,17 @@ optional<ComponentValue> ComponentValueParser::peek(int idx) {
 
 bool ComponentValueParser::check(TokenType type, int idx) {
     auto t = peek<Token>(idx);
-    return t.has_value() && t -> type == type;
+    return t && t -> type == type;
 }
 
 bool ComponentValueParser::check(const wstring& lexeme, int idx) {
     auto t = peek<Token>(idx);
-    return t.has_value() && t -> lexeme == lexeme;
+    return t && t -> lexeme == lexeme;
 }
 
 bool ComponentValueParser::check(const wchar_t& lexeme, int idx) {
     auto t = peek<Token>(idx);
-    return t.has_value() && t -> type == DELIM && t -> lexeme[0] == lexeme;
+    return t && t -> type == DELIM && t -> lexeme[0] == lexeme;
 }
 
 /**
