@@ -2,27 +2,27 @@
 #include <queue>
 
 ComplexSelectorList SelectorParser::parse() {
-    IGNORE_WHITESPACE;
+    skipws();
     ComplexSelectorList list;
     while (!values.empty()) {
         list.emplace_back(consumeComplexSelector());
         if (check(COMMA)) {
             values.pop_front();
-            IGNORE_WHITESPACE;
+            skipws();
         }
     }
     return list;
 }
 
 ComplexSelector SelectorParser::consumeComplexSelector() {
-    IGNORE_WHITESPACE;
+    skipws();
     ComplexSelector selectors = {{{}, consumeCompoundSelector()}};
-    IGNORE_WHITESPACE;
+    skipws();
     while (!values.empty() && !check(T_EOF) && !check(COMMA)) {
         Combinator comb = consumeCombinator();
-        IGNORE_WHITESPACE;
+        skipws();
         selectors.emplace_back(comb, consumeCompoundSelector());
-        IGNORE_WHITESPACE;
+        skipws();
     }
     return selectors;
 }
@@ -337,8 +337,10 @@ PseudoClassSelector SelectorParser::consumePseudoClassSelector() {
             default: break;
         }
     }
-    else if (auto f = peek<Function>()) {
-        return {colon, f -> name, f -> value, Token(RIGHT_PAREN, L")")};
+    else if (auto f = peek<FunctionCall>()) {
+        auto temp = std::move(*f);
+        values.pop_front();
+        return {colon, temp.name, temp.value, Token(RIGHT_PAREN, L")")};
     }
     SYNTAX_ERROR("Expected identifier or function", peek<Token>());
 }

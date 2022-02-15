@@ -1,0 +1,7 @@
+abc:click(ev) {
+    function test(ev) {
+        console.log("I was clicked!", ev);
+    }
+
+    test(ev);
+}

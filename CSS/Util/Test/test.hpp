@@ -48,10 +48,17 @@ typedef struct TestOptions {
 class Test {
     public:
         TestOptions options;
+        string name;
         TestResult test();
         Test(string basePath, TestOptions options = {})
             : basePath(basePath),
-            options(options)
+            options(options),
+            name("TEST \"" + basePath + '"')
+        {};
+        Test(string basePath, TestOptions options, string name)
+            : basePath(basePath),
+            options(options),
+            name(name)
         {};
     private:
         string basePath;

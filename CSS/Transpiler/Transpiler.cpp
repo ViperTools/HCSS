@@ -16,7 +16,7 @@ void Transpiler::visit(AtRule rule) const {
     source += stringify(rule);
 }
 
-void Transpiler::visit(Function function) const {
+void Transpiler::visit(FunctionCall function) const {
     source += stringify(function);
 }
 
@@ -113,7 +113,7 @@ wstring Transpiler::stringify(QualifiedRule& rule) const {
     return stringify(rule.prelude) + OSTRINGIFY(rule.block);
 }
 
-wstring Transpiler::stringify(Function& f) const {
+wstring Transpiler::stringify(FunctionCall& f) const {
     return f.name.lexeme + L'(' + stringify(f.value) + L')';
 }
 

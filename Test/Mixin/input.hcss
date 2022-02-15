@@ -12,12 +12,20 @@
     user-select: none;
 }
 
+@mixin border-radius($radius) {
+    -webkit-border-radius: $radius;
+       -moz-border-radius: $radius;
+        -ms-border-radius: $radius;
+            border-radius: $radius;
+}
+
 @mixin last {
     margin: 0;
 }
 
 .test {
-    @include dark, noselect;
+    /* @include dark, noselect;
     color: red;
-    @include last;
+    @include last; */
+    @include border-radius(10px);
 }

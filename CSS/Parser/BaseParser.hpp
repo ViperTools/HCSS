@@ -4,18 +4,25 @@
 #include "Types.hpp"
 #include <map>
 
+typedef struct Scope {
+    Scope* parent;
+    std::map<wstring, vector<ComponentValue>> variables, atRules, mixins;
+    vector<ComponentValue>* findVariable(wstring name);
+    vector<ComponentValue>* findAtRule(wstring name);
+    vector<ComponentValue>* findMixin(wstring name);
+} Scope;
+
 class BaseParser : public ComponentValueParser {
     public:
         vector<SyntaxNode> parse();
         using ComponentValueParser::ComponentValueParser;
     protected:
         vector<SyntaxNode> rules;
-        std::map<wstring, vector<ComponentValue>> variables;
-        std::map<wstring, vector<ComponentValue>> atRules;
-        std::map<wstring, vector<ComponentValue>> mixins;
+        Scope scope = {};
         bool top = true;
         optional<AtRule> consumeAtRule();
-        Function consumeFunction();
+        FunctionDefinition consumeFunctionDefinition();
+        FunctionCall consumeFunctionCall();
         QualifiedRule consumeQualifiedRule();
         SimpleBlock consumeSimpleBlock();
         ComponentValue consumeComponentValue();

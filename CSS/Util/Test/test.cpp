@@ -10,7 +10,7 @@
 
 TestResult Test::test() {
     TestResult res;
-    Task task("TEST \"" + basePath + '"');
+    Task task(name);
     try {
         bool pass = true;
         

@@ -18,7 +18,6 @@ using std::vector;
 using std::deque;
 
 #define SYNTAX_ERROR(s, t) throw SyntaxError(s, t, __LINE__, __FILE__)
-#define IGNORE_WHITESPACE if (check(WHITESPACE)) values.pop_front();
 
 class ComponentValueParser {
     public:
@@ -45,6 +44,10 @@ class ComponentValueParser {
         bool check(const wstring& lexeme, int idx = 0);
         bool check(const wchar_t& lexeme, int idx = 0);
         TokenType mirror(TokenType type);
+        inline void skipws() {
+            if (check(WHITESPACE))
+                values.pop_front();
+        };
 };
 
 /**

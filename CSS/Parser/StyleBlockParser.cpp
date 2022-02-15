@@ -55,8 +55,8 @@ StyleBlock StyleBlockParser::parse() {
 }
 
 Declaration StyleBlockParser::consumeDeclaration() {
-    Token name = consume(IDENT, "Expected identifier"); IGNORE_WHITESPACE;
-    Token colon = consume(COLON, "Expected colon"); IGNORE_WHITESPACE;
+    Token name = consume(IDENT, "Expected identifier"); skipws();
+    Token colon = consume(COLON, "Expected colon"); skipws();
     Declaration dec(name, colon);
     while (!values.empty()) {
         auto tok = peek<Token>();
