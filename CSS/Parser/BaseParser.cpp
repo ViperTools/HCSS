@@ -1,4 +1,6 @@
-// Improve consuming at rules. Possibly handle mixins in the transpiler. Add function calls for mixins and handle arguments
+// TODO Improve consuming at rules.
+// TODO Improve consuming mixins
+// TODO Make default arguments only allowed as last arguments
 
 #include "BaseParser.hpp"
 #include "ComponentValueParser.hpp"
@@ -21,7 +23,7 @@
  * @return nullptr Otherwise returns null pointer.
  */
 
-vector<ComponentValue>* Scope::findAtRule(wstring name) {
+vector<ComponentValue>* Scope::findAtRule(const wstring& name) {
     if (atRules.contains(name)) {
         return &atRules[name];
     }
@@ -39,7 +41,7 @@ vector<ComponentValue>* Scope::findAtRule(wstring name) {
  * @return nullptr Otherwise returns null pointer.
  */
 
-vector<ComponentValue>* Scope::findMixin(wstring name) {
+Mixin* Scope::findMixin(const wstring& name) {
     if (mixins.contains(name)) {
         return &mixins[name];
     }
@@ -57,7 +59,7 @@ vector<ComponentValue>* Scope::findMixin(wstring name) {
  * @return nullptr Otherwise returns null pointer.
  */
 
-vector<ComponentValue>* Scope::findVariable(wstring name) {
+vector<ComponentValue>* Scope::findVariable(const wstring& name) {
     if (variables.contains(name)) {
         return &variables[name];
     }
@@ -65,6 +67,22 @@ vector<ComponentValue>* Scope::findVariable(wstring name) {
         return parent -> findVariable(name);
     }
     return nullptr;
+}
+
+/**
+ * @brief Determines whether the variable is in the parameters list.
+ *
+ * @param name The name of the variable
+ */
+
+bool Scope::isParameter(const wstring& name) {
+    if (std::count(parameters.begin(), parameters.end(), name)) {
+        return true;
+    }
+    else if (parent) {
+        return parent -> isParameter(name);
+    }
+    return false;
 }
 
 #pragma endregion
@@ -86,7 +104,7 @@ vector<SyntaxNode> BaseParser::parse() {
             // TEST Needs to be changed to accept more than one selector as long as all of them are events
             if (selectors.size() == 1 && selectors.front().size() == 1) {
                 CompoundSelector sel = selectors.front().front().second;
-                if (sel.subclassSelectors.size() > 0) {
+                if (!sel.subclassSelectors.empty()) {
                     if (auto pseudo = std::get_if<PseudoClassSelector>(&sel.subclassSelectors.back())) {
                         if (wstrcompi(pseudo -> tok.lexeme, L"click")) {
                             continue;
@@ -165,8 +183,11 @@ ComponentValue BaseParser::consumeComponentValue() {
             }
             case DELIM: {
                 if (t -> lexeme[0] == '$') {
-                    consumeVariable();
-                    return { };
+                    Token temp = std::move(*t);
+                    if (consumeVariable())
+                        return { };
+                    else
+                        return temp;
                 }
             }
             default: {
@@ -207,7 +228,7 @@ optional<AtRule> BaseParser::consumeAtRule() {
             auto name = consume(IDENT, "Expected identifier");
             skipws();
             if (check(LEFT_BRACE)) {
-                scope.mixins[name.lexeme] = consumeSimpleBlock().value;
+                scope.mixins[name.lexeme] = { nullopt, consumeSimpleBlock().value };
             }
             else {
                 SYNTAX_ERROR("Expected opening brace", nullopt);
@@ -215,44 +236,14 @@ optional<AtRule> BaseParser::consumeAtRule() {
         }
         else if (check(FUNCTION)) {
             auto func = consumeFunctionDefinition();
-            /* vector<ComponentValue> value = { func };
+            Mixin mixin = { func };
             skipws();
             if (!check(LEFT_BRACE)) {
                 SYNTAX_ERROR("Expected opening brace", nullopt);
             }
-            SimpleBlock block = consumeSimpleBlock();
-            std::move(block.value.begin(), block.value.end(), std::back_inserter(value));
-            scope.mixins[func.name.lexeme] = value; */
-        }
-        return nullopt;
-    }
-    else if (wstrcompi(at.lexeme, L"include")) {
-        vector<wstring> include;
-        while (!values.empty()) {
-            if (check<FunctionDefinition>()) {
-                auto f = consume<FunctionDefinition>();
-                // Handle function
-                if (auto vec = scope.findMixin(f.name.lexeme)) {
-                    
-                }
-            }
-            else {
-                auto t = consume<Token>();
-                if (t.type == SEMICOLON) {
-                    break;
-                }
-                else if (t.type == IDENT) {
-                    include.push_back(t.lexeme);
-                }
-                else if (t.type != WHITESPACE && t.type != COMMA) {
-                    SYNTAX_ERROR("Expected identifier or comma", t);
-                }
-            }
-        }
-        for (int i = include.size() - 1; i >= 0; i--) {
-            if (auto mixin = scope.findMixin(include[i])) {
-                values.insert(values.begin(), mixin -> begin(), mixin -> end());
-            }
+            mixin.value = consumeSimpleBlock().value;
+            scope.mixins[func.name.lexeme] = mixin;
+            scope.parameters.clear();
         }
         return nullopt;
     }
@@ -302,26 +293,32 @@ FunctionDefinition BaseParser::consumeFunctionDefinition() {
     while (auto t = peek<Token>()) {
         switch (t -> type) {
             case WHITESPACE: values.pop_front(); break;
-            case T_EOF: case RIGHT_PAREN: {
+            case RIGHT_PAREN: {
                 values.pop_front();
                 return f;
             }
             case COMMA: {
                 values.pop_front();
+            }
+            case DELIM: {
                 skipws();
-                Token dollar = consume(DELIM, "Expected $");
+                auto dollar = consume(DELIM, "Expected $");
                 if (dollar.lexeme[0] != L'$') {
                     SYNTAX_ERROR("Expected $", dollar);
                 }
                 Token name = consume(IDENT, "Expected identifier");
+                scope.parameters.push_back(name.lexeme);
                 skipws();
-                f.parameters[name.lexeme] = {};
+                vector<ComponentValue> _default;
                 if (check('=')) {
                     values.pop_front();
-                    while (!check(',')) {
-                        consumeComponentValue(f.parameters[name.lexeme]);
+                    skipws();
+                    while (!values.empty() && !check(COMMA) && !check(RIGHT_PAREN)) {
+                        consumeComponentValue(_default);
+                        skipws();
                     }
                 }
+                f.parameters.emplace_back(name.lexeme, std::move(_default));
                 break;
             }
             default: {
@@ -329,14 +326,14 @@ FunctionDefinition BaseParser::consumeFunctionDefinition() {
             }
         }
     }
-    return f;
+    SYNTAX_ERROR("Expected ) to close function definition", f.name);
 }
 
 FunctionCall BaseParser::consumeFunctionCall() {
     FunctionCall f(consume(FUNCTION, "Expected function"));
     while (auto t = peek<Token>()) {
         switch (t -> type) {
-            case T_EOF: case RIGHT_PAREN: {
+            case RIGHT_PAREN: {
                 values.pop_front();
                 return f;
             }
@@ -351,7 +348,7 @@ FunctionCall BaseParser::consumeFunctionCall() {
             }
         }
     }
-    return f;
+    SYNTAX_ERROR("Expected ) to close function call", f.name);
 }
 
 QualifiedRule BaseParser::consumeQualifiedRule() {
@@ -383,26 +380,24 @@ QualifiedRule BaseParser::consumeQualifiedRule() {
 }
 
 SimpleBlock BaseParser::consumeSimpleBlock() {
+    Scope _scope(scope);
+    scope = { &_scope };
     SimpleBlock block(consume<Token>());
-    TokenType m = mirror(block.open.type);
+    TokenType close = mirror(block.open.type);
     while (!values.empty()) {
         if (auto t = peek<Token>()) {
-            if (t -> type == m) {
-                block.close = *t;
+            if (t -> type == close) {
+                block.close = std::move(*t);
                 values.pop_front();
-                return block;
+                break;
             }
             else if (t -> type == T_EOF) {
-                return block;
-            }
-            else {
-                consumeComponentValue(block.value);
+                break;
             }
         }
-        else {
-            consumeComponentValue(block.value);
-        }
+        consumeComponentValue(block.value);
     }
+    scope = *scope.parent;
     return block;
 }
 
@@ -430,9 +425,11 @@ vector<ComponentValue> BaseParser::consumeValueList() {
 /**
  * @brief If it is an assignment, it consumes the name and value and adds it to the variables map
  * @brief Otherwise, it pushes the variable's value to the front of the deque
+ *
+ * @return Returns whether a variable was consumed or not. Variables are usually only not consumed if it is a parameter.
  */
 
-void BaseParser::consumeVariable() {
+bool BaseParser::consumeVariable() {
     values.pop_front();
     Token name = consume(IDENT, "Expected identifier");
     skipws();
@@ -440,12 +437,17 @@ void BaseParser::consumeVariable() {
         values.pop_front();
         scope.variables[name.lexeme] = consumeValueList();
     }
+    else if (scope.isParameter(name.lexeme)) {
+        values.push_front(name);
+        return false;
+    }
     else if (auto var = scope.findVariable(name.lexeme)) {
         values.insert(values.begin(), var -> begin(), var -> end());
     }
     else {
         SYNTAX_ERROR("The variable '" + string(name.lexeme.begin(), name.lexeme.end()) + "' was not declared.", name);
     }
+    return true;
 }
 
 #pragma endregion

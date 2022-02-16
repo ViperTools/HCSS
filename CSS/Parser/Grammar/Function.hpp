@@ -15,7 +15,7 @@ struct FunctionCall {
 
 struct FunctionDefinition {
     Token name;
-    std::map<wstring, std::vector<ComponentValue>> parameters = {};
+    std::vector<std::pair<wstring, std::vector<ComponentValue>>> parameters = {};
     explicit FunctionDefinition(Token name)
         : name(std::move(name))
     {};

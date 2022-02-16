@@ -7,6 +7,9 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    color: red;
     margin: 0;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    -ms-border-radius: 10px;
+    border-radius: 10px;
 }

@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-string testPath = "/workspace/HCSS/Test/";
+string testPath = "C:/Users/User/HCSS/Test/";
 std::vector<TestResult> results;
 
 void test(string name, TestOptions options = {}) {

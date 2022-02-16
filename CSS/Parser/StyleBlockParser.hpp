@@ -7,5 +7,7 @@ class StyleBlockParser : public BaseParser {
         StyleBlock parse();
         using BaseParser::BaseParser;
     private:
+        StyleBlock block;
         Declaration consumeDeclaration();
+        optional<AtRule> consumeAtRule();
 };

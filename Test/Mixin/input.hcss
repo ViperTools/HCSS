@@ -19,13 +19,13 @@
             border-radius: $radius;
 }
 
-@mixin last {
-    margin: 0;
+@mixin test($test = rgb(155, 0, 255), $test2 = rgb(255, 0, 155) {
+    background: $test;
+    color: $test2;
 }
 
 .test {
-    /* @include dark, noselect;
-    color: red;
-    @include last; */
-    @include border-radius(10px);
+    @include dark, noselect;
+    margin: 0;
+    @include border-radius(10px), test();
 }

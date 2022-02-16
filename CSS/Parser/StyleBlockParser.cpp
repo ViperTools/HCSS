@@ -6,7 +6,6 @@
 #include <iostream>
 
 StyleBlock StyleBlockParser::parse() {
-    StyleBlock block;
     while (auto t = peek<Token>()) {
         switch (t -> type) {
             case WHITESPACE: case SEMICOLON: values.pop_front(); break;
@@ -52,6 +51,72 @@ StyleBlock StyleBlockParser::parse() {
         }
     }
     return block;
+}
+
+std::vector<std::vector<ComponentValue>> parseArguments(const FunctionCall& call) {
+    ComponentValueParser parser(call.value);
+    vector<vector<ComponentValue>> value = {};
+    parser.skipws();
+    if (!parser.values.empty()) value.emplace_back();
+    while (auto t = parser.peek<Token>()) {
+        switch (t -> type) {
+            case T_EOF: parser.values.pop_front(); break;
+            case COMMA: {
+                parser.values.pop_front();
+                value.emplace_back();
+                break;
+            }
+            default: {
+                value.back().emplace_back(*t);
+                parser.values.pop_front();
+                break;
+            }
+        }
+    }
+    return value;
+}
+
+optional<AtRule> StyleBlockParser::consumeAtRule() {
+    if (auto rule = BaseParser::consumeAtRule()) {
+        vector<ComponentValue> mixins;
+        if (wstrcompi(rule -> name.lexeme, L"include")) {
+            ComponentValueParser parser(rule -> prelude);
+            while (!parser.values.empty()) {
+                parser.skipws();
+                if (parser.check(IDENT)) {
+                    auto ident = parser.consume<Token>();
+                    if (auto mixin = scope.findMixin(ident.lexeme)) {
+                        std::move(mixin -> value.begin(), mixin -> value.end(), std::back_inserter(mixins));
+                    }
+                }
+                else if (parser.check<FunctionCall>()) {
+                    auto call = parser.consume<FunctionCall>();
+                    auto args = parseArguments(call);
+                    if (auto mixin = scope.findMixin(call.name.lexeme)) {
+                        if (auto func = mixin -> function) {
+                            StyleBlockParser sbParser(mixin -> value);
+                            for (const auto& [name, value] : func -> parameters) {
+                                sbParser.scope.variables[name] = value;
+                            }
+                            for (int i = 0; i < args.size(); i++) {
+                                sbParser.scope.variables[func -> parameters[i].first] = std::move(args[i]);
+                            }
+                            StyleBlock _block = sbParser.parse();
+                            std::move(_block.begin(), _block.end(), std::back_inserter(block));
+                        }
+                    }
+                }
+                parser.skipws();
+                if (!parser.values.empty()) {
+                    parser.consume(COMMA, "Expected comma");
+                }
+            }
+            std::move(mixins.rbegin(), mixins.rend(), std::front_inserter(values));
+            return nullopt;
+        }
+        return rule;
+    }
+    return nullopt;
 }
 
 Declaration StyleBlockParser::consumeDeclaration() {

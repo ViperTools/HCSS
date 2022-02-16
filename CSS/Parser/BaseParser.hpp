@@ -4,12 +4,20 @@
 #include "Types.hpp"
 #include <map>
 
+typedef struct Mixin {
+    optional<FunctionDefinition> function;
+    vector<ComponentValue> value = {};
+} Mixin;
+
 typedef struct Scope {
     Scope* parent;
-    std::map<wstring, vector<ComponentValue>> variables, atRules, mixins;
-    vector<ComponentValue>* findVariable(wstring name);
-    vector<ComponentValue>* findAtRule(wstring name);
-    vector<ComponentValue>* findMixin(wstring name);
+    std::map<wstring, vector<ComponentValue>> variables, atRules;
+    std::map<wstring, Mixin> mixins;
+    std::vector<wstring> parameters;
+    vector<ComponentValue>* findVariable(const wstring& name);
+    vector<ComponentValue>* findAtRule(const wstring& name);
+    Mixin* findMixin(const wstring& name);
+    bool isParameter(const wstring& name);
 } Scope;
 
 class BaseParser : public ComponentValueParser {
@@ -20,7 +28,7 @@ class BaseParser : public ComponentValueParser {
         vector<SyntaxNode> rules;
         Scope scope = {};
         bool top = true;
-        optional<AtRule> consumeAtRule();
+        virtual optional<AtRule> consumeAtRule();
         FunctionDefinition consumeFunctionDefinition();
         FunctionCall consumeFunctionCall();
         QualifiedRule consumeQualifiedRule();
@@ -29,5 +37,5 @@ class BaseParser : public ComponentValueParser {
         void consumeComponentValue(vector<ComponentValue>& vec);
         vector<SyntaxNode> consumeRulesList();
         vector<ComponentValue> consumeValueList();
-        void consumeVariable();
+        bool consumeVariable();
 };
