@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-string testPath = "/workspace/HCSS/Test/";
+string testPath = "C:/Users/User/HCSS/Test";
 std::vector<TestResult> results;
 
 void test(string name, TestOptions options = {}) {
@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     
     // Check if all passed
     bool pass = true;
-    for (auto result : results) {
+    for (const auto& result : results) {
         if (result.result.comparison != TEST_PASS || result.result.performance != TEST_PASS || result.error.length() > 0) {
             pass = false;
             break;

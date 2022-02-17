@@ -6,10 +6,10 @@
 
 struct FunctionCall {
     Token name;
-    std::vector<ComponentValue> value;
-    explicit FunctionCall(Token name, std::vector<ComponentValue> value = {})
+    std::vector<std::vector<ComponentValue>> arguments;
+    FunctionCall(Token name, std::vector<std::vector<ComponentValue>> arguments = {})
         : name(std::move(name)),
-        value(std::move(value))
+        arguments(std::move(arguments))
     {};
 };
 

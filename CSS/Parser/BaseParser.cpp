@@ -1,6 +1,5 @@
 // TODO Improve consuming at rules.
 // TODO Improve consuming mixins
-// TODO Make default arguments only allowed as last arguments
 // TODO Improve function call and comma separated list consumption. It's pretty ugly right now.
 // TODO Improve error messages. Many errors are ambiguous.
 
@@ -148,8 +147,7 @@ vector<SyntaxNode> BaseParser::consumeRulesList() {
                 break;
             }
             case AT_KEYWORD: {
-                auto rule = consumeAtRule();
-                if (rule) {
+                if (auto rule = consumeAtRule()) {
                     list.emplace_back(*rule);
                 }
                 break;
@@ -224,33 +222,11 @@ void BaseParser::consumeComponentValue(vector<ComponentValue>& vec) {
 
 optional<AtRule> BaseParser::consumeAtRule() {
     Token at = consume(AT_KEYWORD, "Expected AT_KEYWORD");
-    if (wstrcompi(at.lexeme, L"mixin")) {
-        skipws();
-        if (check(IDENT)) {
-            auto name = consume(IDENT, "Expected identifier");
-            skipws();
-            if (check(LEFT_BRACE)) {
-                scope.mixins[name.lexeme] = { nullopt, consumeSimpleBlock().value };
-            }
-            else {
-                SYNTAX_ERROR("Expected opening brace", nullopt);
-            }
-        }
-        else if (check(FUNCTION)) {
-            auto func = consumeFunctionDefinition();
-            Mixin mixin = { func };
-            skipws();
-            if (!check(LEFT_BRACE)) {
-                SYNTAX_ERROR("Expected opening brace", nullopt);
-            }
-            mixin.value = consumeSimpleBlock().value;
-            scope.mixins[func.name.lexeme] = mixin;
-            scope.parameters.clear();
-        }
-        return nullopt;
-    }
     skipws();
-    if (check('=') && !wstrcompi(at.lexeme, L"media")) {
+    if (wstrcompi(at.lexeme, L"mixin")) {
+        consumeMixin();
+    }
+    else if (check('=') && !wstrcompi(at.lexeme, L"media")) {
         values.pop_front();
         scope.atRules[at.lexeme] = consumeValueList();
     }
@@ -276,7 +252,7 @@ optional<AtRule> BaseParser::consumeAtRule() {
             else {
                 auto block = peek<SimpleBlock>();
                 if (block && block -> open.type == LEFT_BRACE) {
-                    rule.block = *block;
+                    rule.block = std::move(*block);
                     values.pop_front();
                     return rule;
                 }
@@ -290,44 +266,61 @@ optional<AtRule> BaseParser::consumeAtRule() {
     return nullopt;
 }
 
+void BaseParser::consumeMixin() {
+    wstring lexeme;
+    optional<FunctionDefinition> func;
+    if (check(IDENT)) {
+        lexeme = consume(IDENT, "Expected identifier").lexeme;
+    }
+    else if (check(FUNCTION)) {
+        func = consumeFunctionDefinition();
+        lexeme = func -> name.lexeme;
+    }
+    skipws();
+    if (!check(LEFT_BRACE)) {
+        SYNTAX_ERROR("Expected opening brace", nullopt);
+    }
+    scope.mixins[lexeme] = { func, consumeSimpleBlock().value };
+    scope.parameters.clear();
+}
 
 vector<vector<ComponentValue>> BaseParser::consumeCommaList() {
     vector<vector<ComponentValue>> value = {};
     skipws();
-    if (!values.empty()) value.emplace_back();
-    int nparens = 0;
+    int parens = 0;
     while (auto t = peek<Token>()) {
         switch (t -> type) {
             case T_EOF: values.pop_front(); break;
             case LEFT_PAREN: {
-                if (nparens > 0) {
-                    value.back().emplace_back(*t);
-                }
+                value.back().push_back(std::move(*t));
                 values.pop_front();
-                nparens++;
+                parens++;
                 break;
             }
             case RIGHT_PAREN: {
-                values.pop_front();
-                nparens--;
-                if (nparens < 0) {
-                    return value;
-                }
-                else if (nparens > 0) {
-                    value.back().emplace_back(*t);
-                }
-                break;
-            }
-            case COMMA: {
-                if (nparens == 0) {
+                if (parens > 0) {
+                    parens--;
+                    value.back().push_back(std::move(*t));
                     values.pop_front();
-                    value.emplace_back();
                     break;
                 }
+                else {
+                    values.pop_front();
+                    return value;
+                }
+            }
+            case COMMA: {
+                if (parens == 0) {
+                    value.emplace_back();
+                }
+                else {
+                    value.back().push_back(std::move(*t));
+                }
+                values.pop_front();
+                break;
             }
             default: {
                 consumeComponentValue(value.back());
-                break;
             }
         }
     }
@@ -381,40 +374,7 @@ FunctionDefinition BaseParser::consumeFunctionDefinition() {
 }
 
 FunctionCall BaseParser::consumeFunctionCall() {
-    FunctionCall f(consume(FUNCTION, "Expected function"));
-    int nparens = 0;
-    while (auto t = peek<Token>()) {
-        switch (t -> type) {
-            case LEFT_PAREN: {
-                f.value.emplace_back(*t);
-                values.pop_front();
-                nparens++;
-                break;
-            }
-            case RIGHT_PAREN: {
-                if (nparens == 0) {
-                    values.pop_front();
-                    return f;
-                }
-                else {
-                    f.value.emplace_back(*t);
-                    values.pop_front();
-                    nparens--;
-                    break;
-                }
-            }
-            case COMMA: {
-                consumeComponentValue(f.value);
-                skipws();
-                break;
-            }
-            default: {
-                consumeComponentValue(f.value);
-                break;
-            }
-        }
-    }
-    SYNTAX_ERROR("Expected ) to close function call", f.name);
+    return { consume(FUNCTION, "Expected function"), consumeCommaList() };
 }
 
 QualifiedRule BaseParser::consumeQualifiedRule() {

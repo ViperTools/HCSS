@@ -15,11 +15,12 @@ class Transpiler : public SyntaxNodeVisitor {
         void visit(StyleRule rule) const override;
         void visit(std::monostate) const {};
     private:
-        wstring stringify(vector<ComponentValue> list) const;
+        wstring stringify(const vector<ComponentValue>& list) const;
+        wstring stringify(vector<vector<ComponentValue>> list) const;
         wstring stringify(Combinator comb) const;
         wstring stringify(pair<optional<Token>, Token>& prefix) const;
-        wstring stringify(PseudoElementSelector sel) const;
-        wstring stringify(ClassSelector sel) const;
+        wstring stringify(const PseudoElementSelector& sel) const;
+        wstring stringify(const ClassSelector& sel) const;
         wstring stringify(TypeSelector sel) const;
         wstring stringify(AttrMatcher matcher) const;
         wstring stringify(NsPrefix prefix) const;

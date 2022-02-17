@@ -68,15 +68,14 @@ optional<AtRule> StyleBlockParser::consumeAtRule() {
                 }
                 else if (parser.check<FunctionCall>()) {
                     auto call = parser.consume<FunctionCall>();
-                    auto args = StyleBlockParser(call.value).consumeCommaList();
                     if (auto mixin = scope.findMixin(call.name.lexeme)) {
                         if (auto func = mixin -> function) {
                             StyleBlockParser sbParser(mixin -> value);
                             for (const auto& [name, value] : func -> parameters) {
                                 sbParser.scope.variables[name] = value;
                             }
-                            for (int i = 0; i < args.size(); i++) {
-                                sbParser.scope.variables[func -> parameters[i].first] = std::move(args[i]);
+                            for (int i = 0; i < call.arguments.size(); i++) {
+                                sbParser.scope.variables[func -> parameters[i].first] = std::move(call.arguments[i]);
                             }
                             StyleBlock _block = sbParser.parse();
                             std::move(_block.begin(), _block.end(), std::back_inserter(block));

@@ -340,7 +340,12 @@ PseudoClassSelector SelectorParser::consumePseudoClassSelector() {
     else if (auto f = peek<FunctionCall>()) {
         auto temp = std::move(*f);
         values.pop_front();
-        return {colon, temp.name, temp.value, Token(RIGHT_PAREN, L")")};
+        vector<ComponentValue> any;
+        for (vector<ComponentValue> arg : temp.arguments) {
+            std::move(arg.begin(), arg.end(), std::back_inserter(any));
+            any.emplace_back(Token(COMMA, L","));
+        }
+        return {colon, temp.name, any, Token(RIGHT_PAREN, L")")};
     }
     SYNTAX_ERROR("Expected identifier or function", peek<Token>());
 }
