@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-string testPath = "C:/Users/User/HCSS/Test/";
+string testPath = "/workspace/HCSS/Test/";
 std::vector<TestResult> results;
 
 void test(string name, TestOptions options = {}) {
@@ -14,16 +14,16 @@ void test(string name, TestOptions options = {}) {
 int main(int argc, char **argv) {
     // Tests
     // test("Nesting");
-    // test("Performance", {OUTPUT_NEVER, {false}, {false}, {true, 1500}});
+    // test("Performance", {OUTPUT_ALWAYS, {false}, {false}, {true, 1500}});
     // test("Media Queries");
-    test("Mixin", {OUTPUT_ALWAYS});
+    // test("Mixin", {OUTPUT_ALWAYS});
     // test("Events", {OUTPUT_ALWAYS, {false}, {false}});
-    // test("Any", {OUTPUT_NEVER, {false}, {false}});
+    test("Any", {OUTPUT_ALWAYS, {false}, {false}});
     
     // Check if all passed
     bool pass = true;
     for (auto result : results) {
-        if (result.result.comparison != TEST_PASS || result.result.performance != TEST_PASS) {
+        if (result.result.comparison != TEST_PASS || result.result.performance != TEST_PASS || result.error.length() > 0) {
             pass = false;
             break;
         }

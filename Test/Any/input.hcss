@@ -1,0 +1,8 @@
+@mixin test($color, $background = #fff, $test) {
+    color: $color;
+    background: $background;
+}
+
+p {
+    @include test(#000);
+}

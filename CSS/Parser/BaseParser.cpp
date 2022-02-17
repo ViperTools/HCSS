@@ -1,6 +1,8 @@
 // TODO Improve consuming at rules.
 // TODO Improve consuming mixins
 // TODO Make default arguments only allowed as last arguments
+// TODO Improve function call and comma separated list consumption. It's pretty ugly right now.
+// TODO Improve error messages. Many errors are ambiguous.
 
 #include "BaseParser.hpp"
 #include "ComponentValueParser.hpp"
@@ -12,6 +14,7 @@
 #include <iostream>
 #include <iterator>
 #include <variant>
+#include <queue>
 
 #pragma region Scope
 
@@ -223,7 +226,6 @@ optional<AtRule> BaseParser::consumeAtRule() {
     Token at = consume(AT_KEYWORD, "Expected AT_KEYWORD");
     if (wstrcompi(at.lexeme, L"mixin")) {
         skipws();
-        // Add mixin functions
         if (check(IDENT)) {
             auto name = consume(IDENT, "Expected identifier");
             skipws();
@@ -288,8 +290,53 @@ optional<AtRule> BaseParser::consumeAtRule() {
     return nullopt;
 }
 
+
+vector<vector<ComponentValue>> BaseParser::consumeCommaList() {
+    vector<vector<ComponentValue>> value = {};
+    skipws();
+    if (!values.empty()) value.emplace_back();
+    int nparens = 0;
+    while (auto t = peek<Token>()) {
+        switch (t -> type) {
+            case T_EOF: values.pop_front(); break;
+            case LEFT_PAREN: {
+                if (nparens > 0) {
+                    value.back().emplace_back(*t);
+                }
+                values.pop_front();
+                nparens++;
+                break;
+            }
+            case RIGHT_PAREN: {
+                values.pop_front();
+                nparens--;
+                if (nparens < 0) {
+                    return value;
+                }
+                else if (nparens > 0) {
+                    value.back().emplace_back(*t);
+                }
+                break;
+            }
+            case COMMA: {
+                if (nparens == 0) {
+                    values.pop_front();
+                    value.emplace_back();
+                    break;
+                }
+            }
+            default: {
+                consumeComponentValue(value.back());
+                break;
+            }
+        }
+    }
+    return value;
+}
+
 FunctionDefinition BaseParser::consumeFunctionDefinition() {
     FunctionDefinition f(consume(FUNCTION, "Expected function"));
+    bool optional = false;
     while (auto t = peek<Token>()) {
         switch (t -> type) {
             case WHITESPACE: values.pop_front(); break;
@@ -311,12 +358,16 @@ FunctionDefinition BaseParser::consumeFunctionDefinition() {
                 skipws();
                 vector<ComponentValue> _default;
                 if (check('=')) {
+                    optional = true;
                     values.pop_front();
                     skipws();
                     while (!values.empty() && !check(COMMA) && !check(RIGHT_PAREN)) {
                         consumeComponentValue(_default);
                         skipws();
                     }
+                }
+                else if (optional) {
+                    SYNTAX_ERROR("Optional parameters must come last", name);
                 }
                 f.parameters.emplace_back(name.lexeme, std::move(_default));
                 break;
@@ -331,11 +382,26 @@ FunctionDefinition BaseParser::consumeFunctionDefinition() {
 
 FunctionCall BaseParser::consumeFunctionCall() {
     FunctionCall f(consume(FUNCTION, "Expected function"));
+    int nparens = 0;
     while (auto t = peek<Token>()) {
         switch (t -> type) {
-            case RIGHT_PAREN: {
+            case LEFT_PAREN: {
+                f.value.emplace_back(*t);
                 values.pop_front();
-                return f;
+                nparens++;
+                break;
+            }
+            case RIGHT_PAREN: {
+                if (nparens == 0) {
+                    values.pop_front();
+                    return f;
+                }
+                else {
+                    f.value.emplace_back(*t);
+                    values.pop_front();
+                    nparens--;
+                    break;
+                }
             }
             case COMMA: {
                 consumeComponentValue(f.value);

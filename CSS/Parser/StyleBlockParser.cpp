@@ -53,29 +53,6 @@ StyleBlock StyleBlockParser::parse() {
     return block;
 }
 
-std::vector<std::vector<ComponentValue>> parseArguments(const FunctionCall& call) {
-    ComponentValueParser parser(call.value);
-    vector<vector<ComponentValue>> value = {};
-    parser.skipws();
-    if (!parser.values.empty()) value.emplace_back();
-    while (auto t = parser.peek<Token>()) {
-        switch (t -> type) {
-            case T_EOF: parser.values.pop_front(); break;
-            case COMMA: {
-                parser.values.pop_front();
-                value.emplace_back();
-                break;
-            }
-            default: {
-                value.back().emplace_back(*t);
-                parser.values.pop_front();
-                break;
-            }
-        }
-    }
-    return value;
-}
-
 optional<AtRule> StyleBlockParser::consumeAtRule() {
     if (auto rule = BaseParser::consumeAtRule()) {
         vector<ComponentValue> mixins;
@@ -91,7 +68,7 @@ optional<AtRule> StyleBlockParser::consumeAtRule() {
                 }
                 else if (parser.check<FunctionCall>()) {
                     auto call = parser.consume<FunctionCall>();
-                    auto args = parseArguments(call);
+                    auto args = StyleBlockParser(call.value).consumeCommaList();
                     if (auto mixin = scope.findMixin(call.name.lexeme)) {
                         if (auto func = mixin -> function) {
                             StyleBlockParser sbParser(mixin -> value);

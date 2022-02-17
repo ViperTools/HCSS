@@ -29,6 +29,7 @@ class BaseParser : public ComponentValueParser {
         Scope scope = {};
         bool top = true;
         virtual optional<AtRule> consumeAtRule();
+        vector<vector<ComponentValue>> consumeCommaList();
         FunctionDefinition consumeFunctionDefinition();
         FunctionCall consumeFunctionCall();
         QualifiedRule consumeQualifiedRule();
