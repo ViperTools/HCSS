@@ -11,6 +11,7 @@
 TestResult Test::test() {
     TestResult res;
     Task task(name);
+
     try {
         bool pass = true;
         
@@ -32,10 +33,12 @@ TestResult Test::test() {
             std::wstringstream buffer;
             buffer << std::wifstream(basePath + '/' + options.fileNames.expected, std::ios::in).rdbuf();
             std::wstring expected = buffer.str();
+
             if (options.comparison.ignoreWs) {
                 std::erase_if(css, isspace);
                 std::erase_if(expected, isspace);
             }
+
             if (css != expected) {
                 pass = false;
                 res.result.comparison = TEST_FAIL;

@@ -222,7 +222,6 @@ void BaseParser::consumeComponentValue(vector<ComponentValue>& vec) {
 
 optional<AtRule> BaseParser::consumeAtRule() {
     Token at = consume(AT_KEYWORD, "Expected AT_KEYWORD");
-    skipws();
     if (wstrcompi(at.lexeme, L"mixin")) {
         consumeMixin();
     }
@@ -276,7 +275,6 @@ void BaseParser::consumeMixin() {
         func = consumeFunctionDefinition();
         lexeme = func -> name.lexeme;
     }
-    skipws();
     if (!check(LEFT_BRACE)) {
         SYNTAX_ERROR("Expected opening brace", nullopt);
     }
@@ -285,8 +283,7 @@ void BaseParser::consumeMixin() {
 }
 
 vector<vector<ComponentValue>> BaseParser::consumeCommaList() {
-    vector<vector<ComponentValue>> value = {};
-    skipws();
+    vector<vector<ComponentValue>> value = {{}};
     int parens = 0;
     while (auto t = peek<Token>()) {
         switch (t -> type) {
@@ -341,22 +338,18 @@ FunctionDefinition BaseParser::consumeFunctionDefinition() {
                 values.pop_front();
             }
             case DELIM: {
-                skipws();
                 auto dollar = consume(DELIM, "Expected $");
                 if (dollar.lexeme[0] != L'$') {
                     SYNTAX_ERROR("Expected $", dollar);
                 }
                 Token name = consume(IDENT, "Expected identifier");
                 scope.parameters.push_back(name.lexeme);
-                skipws();
                 vector<ComponentValue> _default;
                 if (check('=')) {
                     optional = true;
                     values.pop_front();
-                    skipws();
                     while (!values.empty() && !check(COMMA) && !check(RIGHT_PAREN)) {
                         consumeComponentValue(_default);
-                        skipws();
                     }
                 }
                 else if (optional) {
@@ -434,7 +427,6 @@ SimpleBlock BaseParser::consumeSimpleBlock() {
  */
 
 vector<ComponentValue> BaseParser::consumeValueList() {
-    skipws();
     vector<ComponentValue> val;
     while (!values.empty()) {
         if (auto t = peek<Token>()) {
@@ -458,8 +450,7 @@ vector<ComponentValue> BaseParser::consumeValueList() {
 bool BaseParser::consumeVariable() {
     values.pop_front();
     Token name = consume(IDENT, "Expected identifier");
-    skipws();
-    if (check('=')) {
+    if (check(COLON)) {
         values.pop_front();
         scope.variables[name.lexeme] = consumeValueList();
     }

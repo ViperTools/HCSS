@@ -42,10 +42,6 @@ struct ComponentValueParser {
     bool check(const wstring& lexeme, int idx = 0);
     bool check(const wchar_t& lexeme, int idx = 0);
     TokenType mirror(TokenType type);
-    inline void skipws() {
-        if (check(WHITESPACE))
-            values.pop_front();
-    };
 };
 
 /**

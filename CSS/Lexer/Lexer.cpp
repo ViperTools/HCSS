@@ -180,16 +180,13 @@ void Lexer::addToken(TokenType type) {
 }
 
 void Lexer::consumeWhitespace() {
-	Token t(WHITESPACE, wstring(1, current), COLUMN, line);
 	while (isSpace(reader.peek())) {
         auto c = (wchar_t) reader.get();
         if (c == '\n') {
-            posOffset = (int) reader.tellg();
+            posOffset = (int)reader.tellg();
             line++;
         }
-		t.lexeme += c;
 	}
-	tokens.push_back(t);
 }
 
 wchar_t Lexer::consumeEscapedCodePoint() {

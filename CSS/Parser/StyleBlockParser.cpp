@@ -21,13 +21,27 @@ StyleBlock StyleBlockParser::parse() {
                 break;
             }
             case IDENT: {
-                block.emplace_back(consumeDeclaration());
-                break;
+                std::optional<Token> token = peek<Token>(1);
+
+                if (token && token->type == COLON) {
+                    block.emplace_back(consumeDeclaration());
+                    break;
+                }
             }
             case DELIM: {
                 if (t -> lexeme[0] == '&') {
                     values.pop_front();
+                }
+            }
+            default: {
+                auto tok = peek<Token>();
+
+                if (tok && tok -> type == SEMICOLON) {
+                    values.pop_front();
+                }
+                else {
                     QualifiedRule rule = consumeQualifiedRule();
+
                     if (rule.block) {
                         block.emplace_back(StyleRule(SelectorParser(rule.prelude).parse(), StyleBlockParser(rule.block -> value).parse()));
                     }
@@ -35,17 +49,7 @@ StyleBlock StyleBlockParser::parse() {
                         block.emplace_back(StyleRule(SelectorParser(rule.prelude).parse()));
                     }
                 }
-                break;
-            }
-            default: {
-                while (!values.empty()) {
-                    auto tok = peek<Token>();
-                    if (tok && tok -> type == SEMICOLON) {
-                        values.pop_front();
-                        break;
-                    }
-                    consumeComponentValue();
-                }
+
                 break;
             }
         }
@@ -59,7 +63,6 @@ optional<AtRule> StyleBlockParser::consumeAtRule() {
         if (wstrcompi(rule -> name.lexeme, L"include")) {
             ComponentValueParser parser(rule -> prelude);
             while (!parser.values.empty()) {
-                parser.skipws();
                 if (parser.check(IDENT)) {
                     auto ident = parser.consume<Token>();
                     if (auto mixin = scope.findMixin(ident.lexeme)) {
@@ -82,7 +85,6 @@ optional<AtRule> StyleBlockParser::consumeAtRule() {
                         }
                     }
                 }
-                parser.skipws();
                 if (!parser.values.empty()) {
                     parser.consume(COMMA, "Expected comma");
                 }
@@ -96,8 +98,8 @@ optional<AtRule> StyleBlockParser::consumeAtRule() {
 }
 
 Declaration StyleBlockParser::consumeDeclaration() {
-    Token name = consume(IDENT, "Expected identifier"); skipws();
-    Token colon = consume(COLON, "Expected colon"); skipws();
+    Token name = consume(IDENT, "Expected identifier");
+    Token colon = consume(COLON, "Expected colon");
     Declaration dec(name, colon);
     while (!values.empty()) {
         auto tok = peek<Token>();

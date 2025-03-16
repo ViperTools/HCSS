@@ -2,27 +2,21 @@
 #include <queue>
 
 ComplexSelectorList SelectorParser::parse() {
-    skipws();
     ComplexSelectorList list;
     while (!values.empty()) {
         list.emplace_back(consumeComplexSelector());
         if (check(COMMA)) {
             values.pop_front();
-            skipws();
         }
     }
     return list;
 }
 
 ComplexSelector SelectorParser::consumeComplexSelector() {
-    skipws();
     ComplexSelector selectors = {{{}, consumeCompoundSelector()}};
-    skipws();
     while (!values.empty() && !check(T_EOF) && !check(COMMA)) {
         Combinator comb = consumeCombinator();
-        skipws();
         selectors.emplace_back(comb, consumeCompoundSelector());
-        skipws();
     }
     return selectors;
 }

@@ -11,12 +11,6 @@ struct Declaration {
     Token colon;
     std::vector<ComponentValue> value;
     bool important;
-    Declaration(Token name, Token colon, std::vector<ComponentValue> value = {}, bool important = false)
-        : name(std::move(name)),
-        colon(std::move(colon)),
-        value(std::move(value)),
-        important(important)
-    {};
 };
 
 using StyleBlockVariant = std::variant<std::monostate, Declaration, AtRule, QualifiedRule, StyleRule>;

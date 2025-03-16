@@ -10,9 +10,4 @@ struct AtRule {
     Token name;
     std::vector<ComponentValue> prelude;
     std::optional<SimpleBlock> block;
-    explicit AtRule(Token name, std::vector<ComponentValue> prelude = {}, std::optional<SimpleBlock> block = std::nullopt)
-        : name(std::move(name)),
-        prelude(std::move(prelude)),
-        block(std::move(block))
-    {};
 };

@@ -9,8 +9,4 @@
 struct QualifiedRule {
     std::vector<ComponentValue> prelude;
     std::optional<SimpleBlock> block;
-    explicit QualifiedRule(std::vector<ComponentValue> prelude = {}, std::optional<SimpleBlock> block = std::nullopt)
-        : prelude(std::move(prelude)),
-        block(std::move(block))
-    {};
 };
