@@ -1,5 +1,5 @@
-#include "Util/Logger/logger.hpp"
-#include "Util/Test/test.hpp"
+#include <hcss/util/logger.hpp>
+#include <test.hpp>
 #include <iostream>
 #include <string>
 #include <vector>

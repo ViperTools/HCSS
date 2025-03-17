@@ -4,3 +4,4 @@ build/
 build.sh
 compile_flags.txt
 build.ninja
+dependencies

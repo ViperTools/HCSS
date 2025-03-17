@@ -1,5 +1,5 @@
 #pragma once
-#include "../Parser/SyntaxNodeVisitor.hpp"
+#include <syntaxNodeVisitor.hpp>
 #include <string>
 #include <map>
 using std::wstring;

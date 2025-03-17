@@ -1,7 +1,7 @@
 #pragma once
-#include "Stopwatch.hpp"
-#include "CallResult.hpp"
-#include "logger.hpp"
+#include <hcss/util/stopwatch.hpp>
+#include <callResult.hpp>
+#include <hcss/util/logger.hpp>
 #include <string>
 #include <utility>
 #include <functional>

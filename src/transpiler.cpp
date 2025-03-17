@@ -1,5 +1,5 @@
-#include "Transpiler.hpp"
-#include "../Parser/BaseParser.hpp"
+#include <transpiler.hpp>
+#include <hcss/parser/parser.hpp>
 #include <iostream>
 #include <string>
 #include <variant>
@@ -108,7 +108,7 @@ wstring Transpiler::stringify(AtRule& rule) const {
     source += L'@' + rule.name.lexeme + L' ' + stringify(rule.prelude);
     if (rule.block) {
         source += L'{';
-        visit(BaseParser(rule.block -> value).parse());
+        visit(Parser(rule.block -> value).parse());
         return L"}";
     }
     return L";";

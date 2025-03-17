@@ -1,9 +1,9 @@
-#include "test.hpp"
-#include "../../Lexer/Lexer.hpp"
-#include "../../Parser/Types.hpp"
-#include "../../Parser/BaseParser.hpp"
-#include "../../Transpiler/Transpiler.hpp"
-#include "../Logger/Task.hpp"
+#include <test.hpp>
+#include <hcss/lexer/lexer.hpp>
+#include <hcss/parser/types.hpp>
+#include <hcss/parser/parser.hpp>
+#include <transpiler.hpp>
+#include <task.hpp>
 #include <cctype>
 #include <fstream>
 #include <sstream>
@@ -16,8 +16,9 @@ TestResult Test::test() {
         bool pass = true;
         
         // Transpile to CSS
-        auto lexResult = task.call<vector<Token>>("LEXING", [this] { return Lexer(basePath + '/' + options.fileNames.input).lex(); });
-        auto parseResult = task.call<vector<SyntaxNode>>("PARSING", [=] { return BaseParser(lexResult.result).parse(); });
+        std::ifstream file(basePath + '/' + options.fileNames.input);
+        auto lexResult = task.call<vector<Token>>("LEXING", [this, &file] { return Lexer(file).lex(); });
+        auto parseResult = task.call<vector<SyntaxNode>>("PARSING", [=] { return Parser(lexResult.result).parse(); });
         auto css = task.call<wstring>("TRANSPILING", [=] { Transpiler t; t.visit(parseResult.result); return t.source; }).result;        
 
         // Performance Test

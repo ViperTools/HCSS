@@ -1,1 +1,1 @@
-.a{}:is(.a)b{color:red;}
+:root{background-color:#111;}.sidebar{width:300px;height:100%;border-right:1px#444;padding:6px;flex-direction:column;gap:6px;min-width:300px;}.sidebar-item{border:1pxred;height:25px;background-color:#222;border-radius:5px;flex-shrink:0;}.content{flex:1;justify-content:center;align-items:center;}.button{border:1pxred;width:65px;height:25px;background-color:#222;border-radius:5px;}

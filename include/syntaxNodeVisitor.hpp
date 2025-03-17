@@ -1,10 +1,10 @@
 #pragma once
-#include "Types.hpp"
-#include "Grammar/AtRule.hpp"
-#include "Grammar/Function.hpp"
-#include "Grammar/QualifiedRule.hpp"
-#include "Grammar/SimpleBlock.hpp"
-#include "Grammar/StyleRule.hpp"
+#include <hcss/parser/types.hpp>
+#include <hcss/parser/grammar/atRule.hpp>
+#include <hcss/parser/grammar/function.hpp>
+#include <hcss/parser/grammar/qualifiedRule.hpp>
+#include <hcss/parser/grammar/simpleBlock.hpp>
+#include <hcss/parser/grammar/styleRule.hpp>
 #include <vector>
 #include <deque>
 
